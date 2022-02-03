@@ -9,7 +9,8 @@ class LocCtlr:
 # take range from -1 to 1 and traslate that to the angle we need to move the wheels. 
     scale=0
     throttle=0.0
-    angle=0.0
+    frontAngle=0.0
+    backAngle = 0.0
     rightMotion =0.0
     leftMotion= 0.0
     wheetDist = 1.0
@@ -27,7 +28,11 @@ class LocCtlr:
         pass
 
     def radialSteer(self,_leftJoystick:Double, _rightTrigger:Double):
-        pass
+        center = 0.0
+        throttle =_leftJoystick
+        frontAngle= _rightJoystick
+
+        
 
 if __name__ == "__main__":
     controller = LocCtlr(10)
