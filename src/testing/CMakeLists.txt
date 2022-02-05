@@ -58,6 +58,7 @@ find_package(catkin REQUIRED COMPONENTS
 add_service_files(
 	FILES
 	hello.srv
+	audio.srv
 #   Service2.srv
 )
 
@@ -163,6 +164,8 @@ include_directories(
 catkin_install_python(PROGRAMS
   scripts/hello_server.py
   scripts/hello_client.py
+  scripts/audio_client.py
+  scripts/AudioServer.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
