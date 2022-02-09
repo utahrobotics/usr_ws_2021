@@ -29,7 +29,16 @@ class LocCtlr:
         return (angles, velocities)
 
     def translationControl(self, _leftJoystick:Double, _rightTrigger:Double):
-        pass
+        self.wheelCenter = [0, 0.5]
+        self.steerIntensity = [(_leftJoystick * 2)**3, 0]
+        angleVector = np.subtract(self.wheelCenter, self.steerIntensity)
+        angleVectorUnit = angleVector / np.linalg.norm(angleVector)
+        axisX = [1, 0]
+        dot = np.dot(angleVectorUnit, axisX)
+        angle = np.arccos(dot) * 180 / math.pi
+        angles = [angle, angle, angle, angle]
+        velocities = [_rightTrigger, _rightTrigger, _rightTrigger, _rightTrigger]
+        return (angles, velocities)
 
     def radialSteer(self, _leftJoystick:Double, _rightTrigger:Double):
         self.wheelCenter = [0, 0.5]
