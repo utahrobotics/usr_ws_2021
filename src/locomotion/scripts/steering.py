@@ -42,7 +42,23 @@ class LocCtlr:
         return (angles, velocities)
 
     def translationControl(self, _leftJoystick, _rightTrigger):
-        pass
+        self.wheelCenter = [0, 0.5]
+        self.steerIntensity = [(_leftJoystick * 2)**3, 0]
+        angleVector = np.subtract(self.wheelCenter, self.steerIntensity)
+        angleVectorUnit = angleVector / np.linalg.norm(angleVector)
+        axisX = [1, 0]
+        dot = np.dot(angleVectorUnit, axisX)
+        angle = np.arccos(dot) * 180 / math.pi
+        angles = [angle, angle, angle, angle]
+        velocities = [_rightTrigger, _rightTrigger, _rightTrigger, _rightTrigger]
+	H = Header()
+	H.stamp = rospy.Time.now()
+	msg = SteerAndThrottle()
+	msg.header = H
+	msg.angles = angles
+	msg.throttles = velocities
+	self.pub.publish(msg)
+        return (angles, velocities)
 
     def radialSteer(self, _leftJoystick, _rightTrigger):
         self.wheelCenter = [0, 0.5]
@@ -54,6 +70,13 @@ class LocCtlr:
         angle = np.arccos(dot) * 180 / math.pi
         angles = [angle, -angle, angle, -angle]
         velocities = [_rightTrigger, _rightTrigger, _rightTrigger, _rightTrigger]
+	H = Header()
+	H.stamp = rospy.Time.now()
+	msg = SteerAndThrottle()
+	msg.header = H
+	msg.angles = angles
+	msg.throttles = velocities
+	self.pub.publish(msg)
         return (angles, velocities)
 
 if __name__ == "__main__":
