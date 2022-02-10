@@ -41,9 +41,10 @@ if __name__ == "__main__":
 			data, addr = sock.recvfrom(1024) # buffer size is 1024 bytes
 	    		print("received message: %s" % data)
 			state = json.loads(data)
+			rospy.logwarn(state)
 			header = Header()
 			header.stamp = rospy.Time.now()
-			joyMsg = Joy(header=header, axes=state.axes , buttons=state.buttons)
+			joyMsg = Joy(header=header, axes=state["axes"] , buttons=state["buttons"])
 			pub.publish(joyMsg)
 
 
