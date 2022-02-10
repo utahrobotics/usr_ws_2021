@@ -20,9 +20,8 @@ class LocCtlr:
     rightMotion =0.0
     leftMotion= 0.0
     wheetDist = 1.0
-    def __init__(self,Scale):
-	self.pub = rospy.Publisher('locomotion', SteerAndThrottle, queue_size=10)
-	rospy.init_node('locomotion')
+    def __init__(self,Scale, _pub):
+	self.pub = _pub
         self.scale=Scale
         self.angle=0.0
         self.rightInput=0.0
@@ -79,9 +78,16 @@ class LocCtlr:
 	self.pub.publish(msg)
         return (angles, velocities)
 
+def callback(joy):
+	print("telemetry recieved")
+
 if __name__ == "__main__":
-   	controller = LocCtlr(1)
-	i = 0
-	while True:
-		i += 0.5
-		print(controller.tankSteer(i,5))
+	pub = rospy.Publisher('locomotion', SteerAndThrottle, queue_size=10)
+	rospy.init_node('locomotion')
+	rospy.Subscriber("telemetry_joy", Joy, callback)
+   	controller = LocCtlr(1, pub)
+	rospy.spin()
+	#i = 0
+	#while True:
+		#i += 0.5
+		#print(controller.tankSteer(i,5))

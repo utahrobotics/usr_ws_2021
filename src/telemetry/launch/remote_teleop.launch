@@ -1,5 +1,5 @@
 <launch>
 	<param name="controller_source" value="remote" />
-	<param name="remote_ip" value="192.169.0.69" />
+	<param name="remote_ip" value="192.168.0.141" />
 	<node pkg="telemetry" type="telemetry.py" name="telemetry" />
 </launch>
