@@ -1,22 +1,16 @@
-import rclpy
-from rclpy.node import Node
+#!/usr/bin/env python
+import rospy
 import yaml
 
-from motion_controller_msgs.msg import Mobility
+from locomotion.msg import SteerAndThrottle
 
 import Jetson.GPIO as GPIO
 
-class DrivingSubscriber(Node):
-    #T his clas is responsible for driving all of the Maxon motor controllers using published information from the 
+class DrivingSubscriber():
+    #This clas is responsible for driving all of the Maxon motor controllers using published information from the 
     # Mobility node
     def __init__(self):
-        super().__init__('minimal_subscriber')
-        self.subscription = self.create_subscription(
-            Mobility,
-            'drive_vel',
-            self.listener_callback,
-            10)
-        self.subscription  # prevent unused variable warning
+        self.subscription = rospy.Subscriber('locomotion', SteerAndThrottle, listener_callback)
 
         #create controller instances for each for each of the motor bases from the config file
         tmp_file = open('/home/usr/usr_ws_2020/src/motor_controllers/maxon_motor_node/config/motor_config.yaml')
@@ -55,13 +49,14 @@ class DrivingSubscriber(Node):
         if not (self.controllers['front_left'].ready()  & self.controllers['front_right'].ready() & self.controllers['back_left'].ready() & self.controllers['back_left'].ready()):
             # at least one of the motors is not ready so log it and don't move
             #TODO: change the functionality for be more redundants and specific for the fault manager system
-            self.get_logger().info('one or motors are not ready, so no motor movment is being done')
+            rospy.loginfo('one or motors are not ready, so no motor movment is being done')
         
         # if motors are ready, set the new speed to each controller
-        self.controllers['front_left'].set_speed(msg.front_left)
-        self.controllers['front_right'].set_speed(msg.front_right)
-        self.controllers['back_left'].set_speed(msg.rear_left)
-        self.controllers['back_right'].set_speed(msg.rear_right)
+	# TODO: check order
+        self.controllers['front_left'].set_speed(msg.throttles[0])
+        self.controllers['front_right'].set_speed(msg.throttles[1])
+        self.controllers['back_left'].set_speed(msg.throttles[2])
+        self.controllers['back_right'].set_speed(msg.throttles[3])
 
 
 class MaxonController():
@@ -124,7 +119,7 @@ class MaxonController():
         return
 
     def ready(self):
-        #reads the ready state of the controller returns Ture if controller is ready False otherwise
+        #reads the ready state of the controller returns True if controller is ready False otherwise
         if GPIO.input(self.ready_pin) == GPIO.HIGH:
             return True
         return False
@@ -146,16 +141,12 @@ class MaxonController():
             return False
 
 def main(args=None):
-    rclpy.init(args=args)
+    rospy.init_node('brushless_motor_interface')
 
     # inittialize the main drving node
     sub_node = DrivingSubscriber()
 
-    rclpy.spin(sub_node)
-
-    # Destroy the node explicitly
-    minimal_subscriber.destroy_node()
-    rclpy.shutdown()
+    rospy.spin()
 
 if __name__ == '__main__':
     main()
