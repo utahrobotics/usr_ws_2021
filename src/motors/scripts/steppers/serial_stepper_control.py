@@ -3,8 +3,8 @@ This node is the communication layer betweeen the USR Ros subsystem and the step
 """
 #TODO: add recieving info from the stepper controller
 
-import rclpy
-from rclpy.node import Node
+import rospy
+from rospy.node import Node
 import yaml
 import serial, time
 from enum import Enum
@@ -21,16 +21,14 @@ class Command(Enum):
 	blink_led = 6
 
 
-class SteeringSubscriber(Node):
+class SteeringSubscriber():
     #T his clas is responsible for driving all of the Maxon motor controllers using published information from the 
     # Mobility node
     def __init__(self):
-        super().__init__('minimal_subscriber')
-        self.subscription = self.create_subscription(
-            Mobility,
+        self.subscription = self.rospy.Subscriber(
             'steering',
-            self.listener_callback,
-            10)
+            Mobility,
+            self.listener_callback)
         self.subscription  # prevent unused variable warning
 
         #create controller instances for each for each of the motor bases from the config file
@@ -118,16 +116,16 @@ class StepperController():
 
 
 def main(args=None)
-    rclpy.init(args=args)
+    rospy.init(args=args)
 
     # inittialize the main drving node
     sub_node = SteeringSubscriber()
 
-    rclpy.spin(sub_node)
+    rospy.spin(sub_node)
 
     # Destroy the node explicitly
     sub_node.destroy_node()
-    rclpy.shutdown()
+    rospy.shutdown()
 
 if __name__ == '__main__':
     main()
