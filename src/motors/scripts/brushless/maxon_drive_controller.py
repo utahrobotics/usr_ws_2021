@@ -6,15 +6,19 @@ from locomotion.msg import SteerAndThrottle
 
 import Jetson.GPIO as GPIO
 
+
+with open('/home/usr/usr_ws_2021/src/motors/scripts/brushless/config/motor_config.yaml') as f:
+    motor_config = yaml.safe_load(f)
+
+
 class DrivingSubscriber():
     #This clas is responsible for driving all of the Maxon motor controllers using published information from the 
     # Mobility node
     def __init__(self):
-        self.subscription = rospy.Subscriber('locomotion', SteerAndThrottle, listener_callback)
+        self.subscription = rospy.Subscriber('locomotion', SteerAndThrottle, self.listener_callback)
 
         #create controller instances for each for each of the motor bases from the config file
-        tmp_file = open('/home/usr/usr_ws_2020/src/motor_controllers/maxon_motor_node/config/motor_config.yaml')
-        motor_config = yaml.load(tmp_file, Loader=yaml.FullLoader)
+
         self.controllers = {'front_left': None, 'front_right': None, 'back_left': None, 'back_right': None}
 
         self.controllers['front_left'] = MaxonController(speed_pin=motor_config['front_left']['pins']['speed'], 
@@ -41,14 +45,13 @@ class DrivingSubscriber():
                                                      enable_pin=motor_config['back_right']['pins']['enable'],
                                                      inverted=motor_config['back_right']['inverted'])
 
-        tmp_file.close()
 
     def listener_callback(self, msg):
         # first check that the controllers are ready
-        #TODO: incorperate the state machince variables to decide if motors should be running or not
-        if not (self.controllers['front_left'].ready()  & self.controllers['front_right'].ready() & self.controllers['back_left'].ready() & self.controllers['back_left'].ready()):
+        #TODO: incorporate the state machine variables to decide if motors should be running or not
+        if not (self.controllers['front_left'].ready() & self.controllers['front_right'].ready() & self.controllers['back_left'].ready() & self.controllers['back_left'].ready()):
             # at least one of the motors is not ready so log it and don't move
-            #TODO: change the functionality for be more redundants and specific for the fault manager system
+            #TODO: change the functionality to be more redundant and specific for the fault manager system
             rospy.loginfo('one or motors are not ready, so no motor movment is being done')
         
         # if motors are ready, set the new speed to each controller
@@ -70,9 +73,9 @@ class MaxonController():
         # setup the speed pin, this is controlled using PWM signals
         self.speed_pin = speed_pin
         GPIO.setup(channels=speed_pin, direction=GPIO.OUT, initial=GPIO.LOW)
-        self.pwm_sig = GPIO.PWM(self.speed_pin, 10000) #runs at 10KHz as each cycle in 100us long
+	pwm_frequency = motor_config["pwm_frequency"]
+        self.pwm_sig = GPIO.PWM(self.speed_pin, pwm_frequency)
         self.pwm_sig.start(0)
-        #TODO: grab the pwm frequency from a configuration file
         
         #setup the direction pin, 1 for forward 0 for backwards
         self.dir_pin = dir_pin
@@ -147,6 +150,9 @@ def main(args=None):
     sub_node = DrivingSubscriber()
 
     rospy.spin()
+
+
+__all__ = [DrivingSubscriber, MaxonController]
 
 if __name__ == '__main__':
     main()
