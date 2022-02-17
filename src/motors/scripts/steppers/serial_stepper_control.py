@@ -1,44 +1,47 @@
 """
 This node is the communication layer betweeen the USR Ros subsystem and the stepper motor controllers.
 """
-#TODO: add recieving info from the stepper controller
+# TODO: add recieving info from the stepper controller
 
+#import rclpy
+#from rclpy.node import Node
 import rospy
-from rospy.node import Node
+from rospy import Node
 import yaml
 import serial, time
 from enum import Enum
 
 from motion_controller_msgs.msg import Mobility
 
+
 class Command(Enum):
     # command for the stepper controller
-	init_all = 1
-	align_all = 2
-	align_one = 3
-	stop_all = 4
-	stop_one = 5
-	blink_led = 6
+    init_all = 1
+    align_all = 2
+    align_one = 3
+    stop_all = 4
+    stop_one = 5
+    blink_led = 6
 
 
 class SteeringSubscriber():
-    #T his clas is responsible for driving all of the Maxon motor controllers using published information from the 
+    # T his clas is responsible for driving all of the Maxon motor controllers using published information from the
     # Mobility node
     def __init__(self):
-        self.subscription = self.rospy.Subscriber(
+        rospy.init_node('stepper_control_node')
+        rospy.Subscriber(
             'steering',
             Mobility,
             self.listener_callback)
-        self.subscription  # prevent unused variable warning
 
-        #create controller instances for each for each of the motor bases from the config file
+        # create controller instances for each for each of the motor bases from the config file
         tmp_file = open('./config/stepper_config.yaml')
         stepper_config = yaml.load(tmp_file, Loader=yaml.FullLoader)
 
         self.stepper_controller = StepperController(serial=stepper_config['serial'],
                                                     steps=stepper_config['steps'])
 
-        #intilialize motors and blink for conformation
+        # intilialize motors and blink for conformation
         self.stepper_controller.initMotors()
         time.sleep(.5)
         self.stepper_controller.blink(3)
@@ -48,8 +51,8 @@ class SteeringSubscriber():
 
     def listener_callback(self, msg):
         # first check that the controllers are ready
-        #TODO: incorperate the state machince variables to decide if motors should be running or not 
-        
+        # TODO: incorperate the state machince variables to decide if motors should be running or not
+
         # if motors are ready, set the new speed to each controller
         self.stepper_controller.alignMotors(msg.front_left,
                                             msg.front_right,
@@ -59,13 +62,13 @@ class SteeringSubscriber():
 
 class StepperController():
     """
-        This class holds the imformation relevant for controller a stepper motor contorller onboard the teensy device 
+        This class holds the imformation relevant for controller a stepper motor contorller onboard the teensy device
     """
-    
+
     def __init__(self, serial, steps) -> None:
-        self.serial = serial # the serial number for responding to the device
-        self._mc = serial.Serial(serial, 115200, timeout=.1) # teh micro controller serial instance
-        time.sleep(1) #give the connection a second to settle
+        self.serial = serial  # the serial number for responding to the device
+        self._mc = serial.Serial(serial, 115200, timeout=.1)  # teh micro controller serial instance
+        time.sleep(1)  # give the connection a second to settle
 
     def alignMotors(self, fl, fr, bl, br):
         """
@@ -78,7 +81,7 @@ class StepperController():
             Reutrn:
                 None
         """
-        # convert from degrees to steps (TODO: verify the right direction and whatnot) 
+        # convert from degrees to steps (TODO: verify the right direction and whatnot)
 
         # write the command to the stepper controller
         self._mc.write(self._encodeAlignCommand(self._deg2steps(fl),
@@ -111,21 +114,19 @@ class StepperController():
             Return:
                 steps -> the resultand steps
         """
-        return round((deg/360)*self.steps)
+        return round((deg / 360) * self.steps)
 
 
-
-def main(args=None)
-    rospy.init(args=args)
-
+def main(args=None):
     # inittialize the main drving node
     sub_node = SteeringSubscriber()
 
-    rospy.spin(sub_node)
+    rospy.spin()
 
     # Destroy the node explicitly
     sub_node.destroy_node()
     rospy.shutdown()
+
 
 if __name__ == '__main__':
     main()
