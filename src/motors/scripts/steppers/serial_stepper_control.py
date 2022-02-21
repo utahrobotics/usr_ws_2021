@@ -92,7 +92,7 @@ class StepperController():
                                                 self._deg2steps(br)))
 
     def initMotors(self):
-        self._mc.write(self._encodeInit)
+        self._mc.write(self._encodeInit())
 
     def blink(self, num_blinks):
         self._mc.write(self._encodeBlink(num_blinks=num_blinks))
