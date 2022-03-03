@@ -8,6 +8,7 @@ import math
 import numpy as np
 import rospy
 from std_msgs.msg import Header
+from std_msgs.msg import Twist
 from sensor_msgs.msg import Joy
 from locomotion.msg import SteerAndThrottle
 
@@ -46,7 +47,7 @@ class LocCtlr:
         return (angles, velocities)
 
     def translationControl(self, _leftJoystick, _rightTrigger):
-        self.wheelCenter = [0, 0.5]
+        self.wheelCenter = [0, self.wheelDist/2]
         self.steerIntensity = [(_leftJoystick * 2)**3, 0]
         angleVector = np.subtract(self.wheelCenter, self.steerIntensity)
         angleVectorUnit = angleVector / np.linalg.norm(angleVector)
@@ -82,27 +83,42 @@ class LocCtlr:
         msg.throttles = velocities
         self.pub.publish(msg)
         return (angles, velocities)
+        
+    def joyCallback(joy):
+        if not rospy.get_param("/isAutonomous"):
+            print("telemetry recieved")
+            currentStartButtonState = joy["buttons"][5]
+            if currentStartButtonState and not previousStartButtonState :
+                steeringType=(steeringType+1)%3
+            if steeringType==0:
+                tankSteer(joy["axes"][0],joy["axes"][2])
+            if steeringType==1:
+                radialSteer(joy["axes"][0],joy["axes"][3])
+            if steeringType==2:
+                translationControl(joy["axes"][0],joy["axes"][3])
+            previousStartButtonState = currentStartButtonState
 
-def callback(joy):
-    print("telemetry recieved")
-    currentStartButtonState = joy["buttons"][5]
-    if currentStartButtonState and not previousStartButtonState :
-        steeringType=(steeringType+1)%3
-    if steeringType==0:
-        tankSteer(joy["axes"][0],joy["axes"][2])
-    if steeringType==1:
-        radialSteer(joy["axes"][0],joy["axes"][3])
-    if steeringType==2:
-        translationControl(joy["axes"][0],joy["axes"][3])
-    previousStartButtonState = currentStartButtonState
+    def autonomyCallback(twist):
+        global locController
+        if rospy.get_param("/isAutonomous"):
+            print("autonomy twist recieved")
+
+            linear_x = twist.linear.x
+            angular_z = twist.angular.z
+
+            left_speed = linear_x + angular_z
+            right_speed = linear_x - angular_z
+
+            locController.tankSteer(left_speed, right_speed)
 
 if __name__ == "__main__":
     pub = rospy.Publisher('locomotion', SteerAndThrottle, queue_size=10)
+    locController = LocCtlr(pub)
     rospy.init_node('locomotion')
-    rospy.Subscriber("telemetry_joy", Joy, callback)
-    controller = LocCtlr(1, pub)
+    rospy.Subscriber("telemetry_joy", Joy, locController.joyCallback)
+    rospy.Subscriber("autonomy/twist", Twist, locController.autonomyCallback)
     rospy.spin()
-	# i = 0
-	# while True:
-		# i += 0.5
-		# print(controller.tankSteer(i,5))
+	#i = 0
+	#while True:
+		#i += 0.5
+		#print(controller.tankSteer(i,5))
