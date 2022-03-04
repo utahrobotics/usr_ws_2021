@@ -1,5 +1,17 @@
+inline double seconds() {
+    return micros() / 1e6;
+}
+
 typedef geometry_msgs::Vector3 Vector3;
 typedef geometry_msgs::Quaternion Quaternion;
+
+inline Vector3 v3(double x, double y, double z) {
+    Vector3 v;
+    v.x = x;
+    v.y = y;
+    v.z = z;
+    return v;
+}
 
 inline double magnitude(const Vector3& v) {
     return sqrt(v.x * v.x + v.y * v.y + v.z * v.z);

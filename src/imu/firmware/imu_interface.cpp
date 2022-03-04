@@ -223,15 +223,13 @@ inline int fillImuMsg() {
     raw_imu_data = raw_imu_data1;
     int status = raw_imu_data1.set_data(buffer);
     // TODO: report if nonzero status
-    imu_msg.header.stamp.fromSec(raw_imu_data1.timestamp);
-    // TODO: find a less hacky way to do this
-    nh.adjustTime(&imu_msg.header.stamp);
+    imu_msg.header.stamp = nh.then(raw_imu_data1.timestamp);
 
     vel_msg.header.stamp = imu_msg.header.stamp;
     transform.header.stamp = imu_msg.header.stamp;
 
-    Vector3 delta_angle(DTHETA(x), DTHETA(y), DTHETA(z));
-    Vector3 delta_vel(DV(x), DV(y), DV(z));
+    Vector3 delta_angle = v3(DTHETA(x), DTHETA(y), DTHETA(z));
+    Vector3 delta_vel = v3(DV(x), DV(y), DV(z));
 
     if (!imuInit) {/* Not initialized, collect samples of gravity */
         accbuffer[accidx++] = (1/DT) * delta_vel;
@@ -262,6 +260,7 @@ inline int fillImuMsg() {
         }
     }
 
+    // TODO: rethink using reverse trapezoid rule
     /* Estimate Dθ (ω) and Dv (a) using trapezoid rule */
     imu_msg.angular_velocity = (2/DT) * delta_angle - imu_msg.angular_velocity;
     imu_msg.linear_acceleration = (2/DT) * delta_vel - imu_msg.linear_acceleration;

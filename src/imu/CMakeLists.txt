@@ -9,7 +9,6 @@ project(imu)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
-  ros_teensy
   rosserial_arduino
   rosserial_client
   sensor_msgs
@@ -120,10 +119,11 @@ rosserial_generate_ros_lib(
 
 rosserial_configure_client(
   DIRECTORY firmware
-  TOOLCHAIN_FILE ${ROS_TEENSY_TOOLCHAIN}
+  TOOLCHAIN_FILE ${ROSSERIAL_TEENSY_TOOLCHAIN}
 )
 
-rosserial_add_client_target(firmware teensy40 ALL)
+rosserial_add_client_target(firmware imu_interface)
+rosserial_add_client_target(firmware imu_interface-upload)
 
 ###########
 ## Build ##

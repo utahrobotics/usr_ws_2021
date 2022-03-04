@@ -3,10 +3,12 @@ project(imu)
 
 include_directories(${ROS_LIB_DIR})
 
-FILE(GLOB_RECURSE ros_src
-    "${ROS_LIB_DIR}/*.cpp"
-    "${ROS_LIB_DIR}/*.h")
-add_library(ros_lib ${ros_src})
-
-add_teensy_executable(imu_interface main.cpp)
-target_link_libraries(imu_interface ros_lib)
+generate_arduino_firmware(
+    imu_interface
+    SRCS imu_interface.cpp ${ROS_LIB_DIR}/time.cpp
+    HDRS util.h
+    BOARD teensy40
+    PORT /dev/ttyACM0
+    AFLAGS -n -w
+    SETTINGS opt=o2std
+)
