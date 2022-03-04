@@ -33,7 +33,6 @@
 #define SETREADY(v) digitalWriteFast(DataReady, v); ready = (bool) v
 #define SETSPIN(v) digitalWriteFast(SPin, v); spin = (bool) v
 #define DETACHCLK if (interrupt) {\
-    detachInterrupt(digitalPinToInterrupt(ClkPin));\
     interrupt = false;\
     digitalWriteFast(ClkIntEnabled, LOW);\
 }
@@ -81,6 +80,52 @@ bool interrupt = false;
 int bitCounter = 0;
 int idx = 0;
 
+#include "RxData.h"
+static int rxpacketidx = -1-(INITPACKETCOUNT+STILLPACKETCOUNT);
+static int rxidx = -1;
+static uint8_t rxbuffer = 0;
+
+inline void setchecksum(uint16_t* buffer) {
+    buffer[0] = OpeningFlag << 8u;
+    uint16_t sum = 0;
+    for (size_t i = 1; i < 13; i++) {
+        sum += buffer[i];
+    }
+    buffer[13] = (uint16_t) ~sum;
+    buffer[15] = OpeningFlag;
+}
+
+inline uint8_t readNextRxDataBit() {
+    uint16_t* wordbuffer;
+    if (rxpacketidx < -STILLPACKETCOUNT) {
+        wordbuffer = &initwords[rxpacketidx+INITPACKETCOUNT+STILLPACKETCOUNT][0];
+    }
+    else if (rxpacketidx < 0) {
+        wordbuffer = &stillwords[rxpacketidx+STILLPACKETCOUNT][0];
+    }
+    else {
+        wordbuffer = &rxwords[rxpacketidx][0];
+    }
+
+    if (++rxidx < 0) {
+        return 0;
+    }
+    rxbuffer <<= 1u;
+    rxbuffer |= (wordbuffer[rxidx / 16] >> (rxidx % 16)) & 1u;
+
+    /* Add padding bit if not in a flag word */
+    if (!((rxbuffer & 0x3f) ^ 0x3f) && rxidx >= 16 && rxidx < 16*15) {
+        rxidx--;
+        rxbuffer ^= 1u;
+    }
+    uint8_t value = rxbuffer & 1u;
+    digitalWriteFast(RxData, value);
+    return value;
+}
+
+static double tclk_ISR[1000];
+static int tclk_ISRidx = 0;
+
 /* IMU clock interrupt */
 void clk_ISR(void) {
     /* If we already have data, leave */
@@ -89,7 +134,7 @@ void clk_ISR(void) {
         DETACHCLK
         return;
     }
-    register uint8_t rval = digitalReadFast(RxData);
+    register uint8_t rval = readNextRxDataBit();
     derBuffer <<= 1;
     derBuffer |= rval;
     /* look for opening/closing flag */
@@ -283,6 +328,23 @@ inline int fillImuMsg() {
 }
 
 static double data_period = 2.5e-3;
+static double next_clk_ts = 0;
+static double clk_period = 1 / 1.015e6;
+
+inline void delayUntilClkInt() {
+    double ndelay = 1e9*(next_clk_ts-seconds());
+    if (ndelay > 0) {
+        delayNanoseconds((uint32_t) ndelay);
+    }
+    next_clk_ts += clk_period;
+    digitalWriteFast(ClkPin, HIGH);
+    double now = seconds();
+    clk_ISR();
+    double diff = seconds() - now;
+    digitalWriteFast(ClkPin, LOW);
+    tclk_ISR[tclk_ISRidx++] = diff;
+    tclk_ISRidx %= 1000;
+}
 
 void setup() {
     Serial.begin(115200);
@@ -294,9 +356,9 @@ void setup() {
 
     pinMode(BADCHECKSUM, OUTPUT);
     pinMode(BADDATA, OUTPUT);
-    pinMode(ClkPin, INPUT);
-    pinMode(IMUDataReady, INPUT);
-    pinMode(RxData, INPUT);
+    pinMode(ClkPin, OUTPUT);
+    pinMode(IMUDataReady, OUTPUT);
+    pinMode(RxData, OUTPUT);
     pinMode(IMUInit, OUTPUT);
     pinMode(InFrame, OUTPUT);
     pinMode(DataReady, OUTPUT);
@@ -310,6 +372,8 @@ void setup() {
     SETREADY(0);
     SETSPIN(1);
     digitalWriteFast(ClkIntEnabled, interrupt);
+    digitalWriteFast(ClkPin, LOW);
+    digitalWriteFast(IMUDataReady, HIGH);
 
     nh.initNode();
     nh.setSpinTimeout(1); // 1 ms timeout on spin
@@ -333,6 +397,16 @@ void setup() {
     transform.header.frame_id = "/imu_base";
     transform.child_frame_id = "/imu";
 
+    for (size_t i = 0; i < INITPACKETCOUNT; i++) {
+        setchecksum(&initwords[i][0]);
+    }
+    for (size_t i = 0; i < STILLPACKETCOUNT; i++) {
+        setchecksum(&stillwords[i][0]);
+    }
+    for (size_t i = 0; i < RXPACKETCOUNT; i++) {
+        setchecksum(&rxwords[i][0]);
+    }
+
     /* wait for connection before starting work */
     while (!nh.connected()) {
         nh.spinOnce();
@@ -345,7 +419,6 @@ void setup() {
     ts = seconds();
 
     delay(100);
-    attachInterrupt(digitalPinToInterrupt(IMUDataReady), set_ts, FALLING);
 }
 
 static double tspin, tfill, tpdebug, tpimu, tpvel, tptf, tptotal;
@@ -367,6 +440,24 @@ void loop() {
 
         if (tspin > 1e-3) {
             sprintf(debug_str, "Last spin: %.3f ms", tspin*1e3);
+            debug_msg.data = debug_str;
+            lmsgdbg += debug_pub.publish(&debug_msg);
+        }
+
+        double tdiffmin = 1, tdiffmax = 0;
+        for (int i = 0; i < tclk_ISRidx; i++) {
+            double tdiff = tclk_ISR[i];
+            if (tdiff < tdiffmin) {
+                tdiffmin = tdiff;
+            }
+            if (tdiff > tdiffmax) {
+                tdiffmax = tdiff;
+            }
+        }
+
+        if (tdiffmax > clk_period) {
+            sprintf(debug_str, "clk_ISR times: (%.3f us, %.3f us)",
+                     tdiffmin*1e6, tdiffmax*1e6);
             debug_msg.data = debug_str;
             lmsgdbg += debug_pub.publish(&debug_msg);
         }
@@ -425,18 +516,31 @@ void loop() {
         double now = seconds();
         nh.spinOnce();
         tspin = seconds() - now;
-        while (spin);
+        double udelay = 1e6*(ts+data_period-seconds());
+        if (udelay > 0) {
+            delayMicroseconds((uint32_t) udelay);
+        }
+        digitalWriteFast(IMUDataReady, LOW);
+        set_ts();
+        delayMicroseconds(10);
+        digitalWriteFast(IMUDataReady, HIGH);
     }
     else if (!interrupt) {
+        tclk_ISRidx = 0;
         /* enable IMU clock interrupt */
         interrupt = true;
         digitalWriteFast(ClkIntEnabled, HIGH);
-        attachInterrupt(digitalPinToInterrupt(ClkPin), clk_ISR, RISING);
+        if (++rxpacketidx >= RXPACKETCOUNT) {
+            rxpacketidx = 0;
+        }
+        rxidx = -200;
+        rxbuffer = 0;
+        next_clk_ts = seconds() + clk_period;
     }
     else {
         /* wait for interrupt */
 //        asm("wfi");
         /* but keep running CPU clock */
-        while (!ready);
+        delayUntilClkInt();
     }
 }
