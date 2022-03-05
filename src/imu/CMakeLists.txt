@@ -114,7 +114,7 @@ catkin_package(
 
 rosserial_generate_ros_lib(
   PACKAGE rosserial_arduino
-  SCRIPT make_libraries.py -hardfloat64
+  SCRIPT make_libraries_hardfloat64.py
 )
 
 rosserial_configure_client(
