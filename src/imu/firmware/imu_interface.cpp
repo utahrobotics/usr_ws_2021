@@ -71,6 +71,8 @@ tf::TransformBroadcaster tfbroadcaster;
 
 double ts; /* time stamp set when IMUDataReady drops */
 uint16_t buffer[HDLC_FRAME_LENGTH];
+uint16_t buffer2[HDLC_FRAME_LENGTH+1];
+uint16_t rawbuffer[17];
 uint16_t derBuffer = 0;
 uint16_t wordBuffer = 0;
 bool imuInit = false;
@@ -79,7 +81,8 @@ bool ready = false;
 bool spin = true;
 bool interrupt = false;
 int bitCounter = 0;
-int idx = 0;
+int rawBitCounter = 0;
+int idx = HDLC_FRAME_LENGTH;
 
 /* IMU clock interrupt */
 void clk_ISR(void) {
@@ -97,6 +100,7 @@ void clk_ISR(void) {
         inFrame = !inFrame;
         digitalWriteFast(InFrame, inFrame);
         if (inFrame) {
+            rawBitCounter = 0;
             bitCounter = 0;
             idx = 0;
         }
@@ -106,6 +110,15 @@ void clk_ISR(void) {
         }
         return;
     }
+
+    if (!inFrame) {
+        return;
+    }
+    else {
+        rawbuffer[rawBitCounter / 16] <<= 1;
+        rawbuffer[rawBitCounter++ / 16] |= rval;
+    }
+
     /* add bits to wordbuffer and store words to buffer */
     /* exclude padding bits */
     if ((idx == 0 && bitCounter < 5) || ((derBuffer & 0x3f) ^ 0x3e)) {
@@ -113,6 +126,7 @@ void clk_ISR(void) {
         wordBuffer |= rval;
         if (++bitCounter == 16) {
             bitCounter = 0;
+            buffer2[idx] = reverse(wordBuffer);
             if (idx >= HDLC_FRAME_LENGTH) {
                 /* Too much data, return what we have */
                 /* Don't want to get stuck in the clock interrupt */
@@ -260,10 +274,9 @@ inline int fillImuMsg() {
         }
     }
 
-    // TODO: rethink using reverse trapezoid rule
-    /* Estimate Dθ (ω) and Dv (a) using trapezoid rule */
-    imu_msg.angular_velocity = (2/DT) * delta_angle - imu_msg.angular_velocity;
-    imu_msg.linear_acceleration = (2/DT) * delta_vel - imu_msg.linear_acceleration;
+    /* Estimate Dθ (ω) and Dv (a) */
+    imu_msg.angular_velocity = (1/DT) * delta_angle;
+    imu_msg.linear_acceleration = (1/DT) * delta_vel;
 
     Vector3 old_gravity = gravity;
     transform.transform.rotation += 0.5 * transform.transform.rotation * v2q(delta_angle);
