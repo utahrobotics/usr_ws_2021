@@ -4,7 +4,7 @@ import rospy
 import tf
 
 def main():
-	rospy.init_node('robot_tf_broadcaster')
+	rospy.init_node('depth_cam_tf_broadcaster')
 	r = rospy.Rate(100)
 
 	br = tf.TransformBroadcaster()
