@@ -12,10 +12,12 @@ x = 0.0
 y = 0.0
 th = 0.0
 
-current_time = rospy.get_rostime()
-last_time = rospy.get_rostime()
+current_time = 0
+last_time = 0
 
 def odomPubCallback(twistStamped ):
+	global current_time
+	global last_time
 	vx = twistStamped.twist.linear.x
 	vy = twistStamped.twist.linear.y
 	vth = twistStamped.twist.angular.z
@@ -69,6 +71,14 @@ def odomPubCallback(twistStamped ):
 	last_time = current_time
 
 def main():
+	global current_time
+	global last_time
+	
 	rospy.init_node('robot_pose_tf_broadcaster')
-	rospy.Subscriber("imu/vel", TwistStamped, odomPubCallback)
+	current_time = rospy.get_rostime()
+	last_time = rospy.get_rostime()
+	rospy.Subscriber("sensors/imu/vel", TwistStamped, odomPubCallback)
 	rospy.spin()
+
+if(__name__=="__main__"):
+	main()

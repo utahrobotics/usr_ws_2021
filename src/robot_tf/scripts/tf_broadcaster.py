@@ -13,7 +13,7 @@ def main():
 		br.sendTransform((0.2, 0.1, 0.3), tf.transformations.quaternion_from_euler(0,0,0),
 			rospy.Time.now(), "base_cam1", "base_link")
 		br.sendTransform((0.2, -0.1, 0.3), tf.transformations.quaternion_from_euler(0,0,0),
-					rospy.Time.now(), "base_cam2", "base_link")
+			rospy.Time.now(), "base_cam2", "base_link")
 		r.sleep()
 	
 
