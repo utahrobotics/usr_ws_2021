@@ -116,7 +116,7 @@ if __name__ == "__main__":
     locController = LocCtlr(pub)
     rospy.init_node('locomotion')
     rospy.Subscriber("telemetry_joy", Joy, locController.joyCallback)
-    rospy.Subscriber("autonomy/twist", Twist, locController.autonomyCallback)
+    rospy.Subscriber("cmd_vel", Twist, locController.autonomyCallback)
     rospy.spin()
 	#i = 0
 	#while True:
