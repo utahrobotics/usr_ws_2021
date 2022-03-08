@@ -1,5 +1,6 @@
 <launch>
-	<node pkg="robot_tf" type="tf_broadcaster.py" name="tf_broadcaster" />
-	
+	<node pkg="robot_tf" type="depth_cam_tf_broadcaster.py" name="tf_broadcaster" />
+	<node pkg="localization" type="pozyx_faker.py" name="pozyx_faker" />
+	<node pkg="imu" type="imu_faker.py" name="imu_faker" />
 	<!-- <node pkg="robot_tf" type="tf_listener_test.py" name="tf_listener" /> -->
 </launch>

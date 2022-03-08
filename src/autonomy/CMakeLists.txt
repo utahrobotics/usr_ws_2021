@@ -162,6 +162,7 @@ include_directories(
 ## in contrast to setup.py, you can choose the destination
 catkin_install_python(PROGRAMS
   scripts/odometry_publisher.py
+  scripts/simple_goal_test.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 

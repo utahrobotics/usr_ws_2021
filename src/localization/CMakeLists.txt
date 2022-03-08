@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0.2)
-project(imu)
+project(localization)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 # add_compile_options(-std=c++11)
@@ -8,12 +8,9 @@ project(imu)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
-  geometry_msgs
-  rosserial_arduino
-  rosserial_client
-  sensor_msgs
+  roscpp
+  rospy
   std_msgs
-  tf
 )
 
 ## System dependencies are found with CMake's conventions
@@ -73,7 +70,7 @@ find_package(catkin REQUIRED COMPONENTS
 ## Generate added messages and services with any dependencies listed here
 # generate_messages(
 #   DEPENDENCIES
-#   geometry_msgs#   sensor_msgs#   std_msgs
+#   std_msgs
 # )
 
 ################################################
@@ -107,23 +104,10 @@ find_package(catkin REQUIRED COMPONENTS
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
 #  INCLUDE_DIRS include
-#  LIBRARIES imu
-#  CATKIN_DEPENDS geometry_msgs rosserial_arduino rosserial_client sensor_msgs std_msgs tf
+#  LIBRARIES localization
+#  CATKIN_DEPENDS roscpp rospy std_msgs
 #  DEPENDS system_lib
 )
-
-rosserial_generate_ros_lib(
-  PACKAGE rosserial_arduino
-  SCRIPT make_libraries_hardfloat64.py
-)
-
-rosserial_configure_client(
-  DIRECTORY firmware
-  TOOLCHAIN_FILE ${ROSSERIAL_TEENSY_TOOLCHAIN}
-)
-
-rosserial_add_client_target(firmware imu_interface)
-rosserial_add_client_target(firmware imu_interface-upload)
 
 ###########
 ## Build ##
@@ -138,7 +122,7 @@ include_directories(
 
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}
-#   src/${PROJECT_NAME}/imu.cpp
+#   src/${PROJECT_NAME}/localization.cpp
 # )
 
 ## Add cmake target dependencies of the library
@@ -149,7 +133,7 @@ include_directories(
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-# add_executable(${PROJECT_NAME}_node src/imu_node.cpp)
+# add_executable(${PROJECT_NAME}_node src/localization_node.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -176,7 +160,9 @@ include_directories(
 ## Mark executable scripts (Python etc.) for installation
 ## in contrast to setup.py, you can choose the destination
 catkin_install_python(PROGRAMS
-  scripts/imu_faker.py
+  scripts/pozyx/TestConnection.py
+  scripts/pozyx/TestDeviceDevice.py
+  scripts/pozyx_faker/pozyx_faker.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
@@ -213,7 +199,7 @@ catkin_install_python(PROGRAMS
 #############
 
 ## Add gtest based cpp test target and link libraries
-# catkin_add_gtest(${PROJECT_NAME}-test test/test_imu.cpp)
+# catkin_add_gtest(${PROJECT_NAME}-test test/test_localization.cpp)
 # if(TARGET ${PROJECT_NAME}-test)
 #   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
 # endif()
