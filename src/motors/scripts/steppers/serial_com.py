@@ -19,7 +19,7 @@ def encodeBlink(num_blinks):
 	return bytearray([Command.blink_led.value, num_blinks])
 
 def encodeHome(port):
-	return bytearray([Command.home_port, port])
+	return bytearray([Command.home_port.value, port])
 
 def encodeInit():
 	return bytearray([Command.init_all.value])
