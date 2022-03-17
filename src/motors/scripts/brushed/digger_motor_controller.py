@@ -1,5 +1,5 @@
-import rclpy
-from rclpy.node import Node
+import rospy
+from rospy.node import Node
 
 from std_msgs.msg import Float32
 import os
@@ -67,16 +67,16 @@ class DrivingSubscriber(Node):
 
 
 def main(args=None):
-    rclpy.init(args=args)
+    rospy.init(args=args)
 
     # inittialize the main drving node
     sub_node = DrivingSubscriber()
 
-    rclpy.spin(sub_node)
+    rospy.spin(sub_node)
 
     # Destroy the node explicitly
     sub_node.destroy_node()
-    rclpy.shutdown()
+    rospy.shutdown()
 
 if __name__ == '__main__':
     main()

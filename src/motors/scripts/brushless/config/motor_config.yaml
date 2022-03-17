@@ -30,4 +30,4 @@ back_right:
     enable: 7
   inverted: True
 
-
+pwm_frequency: 10000
