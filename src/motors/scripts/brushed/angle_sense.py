@@ -3,8 +3,11 @@ import time
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 import numpy as np
+import rospy
 import collections
 from matplotlib import style
+from motors.msg import MotorMessages
+
 
 
 # Register and other configuration values:
@@ -143,7 +146,12 @@ class AngleSensor:
 			fsRange = 0.512
 		elif self.gain == 16:
 			fsRange = 0.256
-		
+		H = Header()
+		H.stamp = rospy.Time.now()
+		msg = MotorMessages()
+		msg.header = H
+		msg.brushedVolts = counts * (fsRange / (32768))
+		self.pub.pubish(msg)
 		return counts * (fsRange / (32768))
 
 	def computeDegrees(self, vdd, output):
@@ -151,6 +159,12 @@ class AngleSensor:
 		lower_bound = vdd*.1
 		slope = (270-90)/(upper_bound-lower_bound)
 		angle = (output-lower_bound)*slope
+		H = Header()
+		H.stamp = rospy.Time.now()
+		msg = MotorMessages()
+		msg.header = H
+		msg.brushedAngle = angle
+		self.pub.pubish(msg)
 		return angle
 
 	
@@ -173,3 +187,8 @@ if __name__ == "__main__":
 	
 	ani = FuncAnimation(fig, animate, interval=10)
 	plt.show()
+
+	pub = rospy.Publisher('motors', SteerAndThrottle, queue_size=10)
+	rospy.init_node('motors')
+	controller = LocCtlr(1, pub)
+	rospy.spin()
