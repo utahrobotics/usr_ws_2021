@@ -12,7 +12,7 @@ volatile int cmd = 0;
 
 const uint8_t sleepPin = 14;
 
-uint8_t homingPins[4] = {3, 32, 33, 20};
+uint8_t homingPins[4] = {3, 3, 33, 20};
 const uint8_t CSPins[4] = {0, 29, 36, 23};
 const uint8_t FaultPins[4] = {1, 30, 35, 22}; //currently unused
 const uint8_t StallPin[4] = {2, 31, 34,21}; //currently unused
@@ -42,8 +42,6 @@ void recieve_command(){
   while(1){ 
     if(Serial.available() > 0) {
       char read_byte = Serial.read();
-      send_msg("cmd:", false);
-      send_msg(String(int(read_byte)), false);
       switch(read_byte){
         case 0x1:{
           send_msg("init cmd recieved", false);
@@ -96,12 +94,23 @@ void home_all(){
   bool homed[4] = {false, false, false, false};
 
   while(std::accumulate(homed, homed + 4, 0) < 4){
+    if(Serial.available() > 0){
+      int cmd = Serial.read();
+      if(cmd == 0x8){ //cancel
+        send_msg("init canceled", false);
+        return;
+      }
+    }
+    
+
+    
     for(int i = 0; i < 4; i++){
       if(homed[i]==false){
         if(digitalRead(homingPins[i]) == 0){
-          threads.addThread(turn_degrees, new int[2]{2, i});
+          desiredPositions[i] += 1;
         }
         else{
+          send_msg(String(i) + " homed", false);
           homed[i] = true;
           desiredPositions[i] = 90;
           currentPositions[i] = 90;
@@ -172,24 +181,26 @@ void init_drivers(){
 }
 
 void alignControllerThread(){
-  for(int i = 0; i<4; i++){
-    int diff = currentPositions[i] - desiredPositions[i];
-    if(diff){
-      int degrees = diff>0?2:-2;
-      int driverNum = i;
-      double steps = abs(degrees/(degrees_per_step/(gear_ratio*microstep)));
-      if(degrees>=0){
-        drivers[driverNum].setDirection(0);
+  while(true){
+    for(int i = 0; i<4; i++){
+      int diff = currentPositions[i] - desiredPositions[i];
+      if(diff){
+        int degrees = diff>0?-1:1;
+        int driverNum = i;
+        double steps = abs(degrees/(degrees_per_step/(gear_ratio*microstep)));
+        if(degrees>=0){
+          drivers[driverNum].setDirection(0);
+        }
+        else{
+          drivers[driverNum].setDirection(1);
+        }
+        for(unsigned int x = 0; x <= steps; x++)
+        {
+          drivers[driverNum].step();
+          delayMicroseconds(StepPeriodUs);
+        }
+        currentPositions[i] += degrees;
       }
-      else{
-        drivers[driverNum].setDirection(1);
-      }
-      for(unsigned int x = 0; x <= steps; x++)
-      {
-        drivers[driverNum].step();
-        delayMicroseconds(StepPeriodUs);
-      }
-      currentPositions[i] += degrees;
     }
   }
   
