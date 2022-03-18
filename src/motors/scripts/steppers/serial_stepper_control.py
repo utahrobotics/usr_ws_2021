@@ -13,6 +13,7 @@ import time
 from enum import Enum
 import os
 import struct
+import rospkg
 
 from locomotion.msg import SteerAndThrottle
 
@@ -39,13 +40,17 @@ class SteeringSubscriber():
             'locomotion',
             SteerAndThrottle,
             self.listener_callback)
+	 
+	# get an instance of RosPack with the default search paths
+	rospack = rospkg.RosPack()
 
-        # create controller instances for each for each of the motor bases from the config file
-        rospy.logwarn(os.getcwd())
-        tmp_file = open(
-            './config/stepper_config.yaml')
+	# get the file path for rospy_tutorials
+	rospack.get_path('motors')
+
+        tmp_file = open(os.path.join(rospack.get_path('motors'), 'scripts', 'steppers', 'config', 'stepper_config.yaml'))
         stepper_config = yaml.safe_load(tmp_file)
 
+	# create controller instances for each for each of the motor bases from the config file
         self.stepper_controller = StepperController(stepper_config['serial'],
                                                     stepper_config['steps'])
 
