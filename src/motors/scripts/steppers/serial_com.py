@@ -1,6 +1,10 @@
 import serial, time
 from enum import Enum
 import struct
+import threading
+
+COM = "COM10"
+arduino = serial.Serial(COM, 115200, timeout=.1)
 
 int_to_four_bytes = struct.Struct('<I').pack
 
@@ -12,6 +16,7 @@ class Command(Enum):
 	stop_one = 5
 	blink_led = 6
 	home_port = 7
+	cancel = 8
 
 def encodeAlignCommand(fl, fr, bl, br):
     # cmd = motor<<6 | dir<<5 | steps;
@@ -25,15 +30,26 @@ def encodeAlignCommand(fl, fr, bl, br):
 def encodeBlink(num_blinks):
 	return bytearray([Command.blink_led.value, num_blinks])
 
+def encodeCancel():
+	return bytearray([Command.cancel.value])
+
 def encodeHome(port):
 	return bytearray([Command.home_port.value, port])
 
 def encodeInit():
 	return bytearray([Command.init_all.value])
 
+def readSerial():
+	while True:
+		data = arduino.read()
+		if data:
+			print(data.decode(), end = "") #strip out the new lines for now
 
-arduino = serial.Serial('COM11', 115200, timeout=.1)
 time.sleep(1) #give the connection a second to settle
+
+read_thread = threading.Thread(target=readSerial)
+read_thread.setDaemon(True) 
+read_thread.start()
 
 while True:
 	user_cmd = input("\nEnter a command:\n")
@@ -41,24 +57,25 @@ while True:
 	if user_cmd == "init":
 		cmd = encodeInit()
 	
-	if user_cmd == "align all":
+	elif user_cmd == "align all":
 		left_front = int(input("left front angle:"))
 		right_front = int(input("right front angle:"))
 		left_back = int(input("left back angle:"))
 		right_back = int(input("right back angle:"))
 		cmd = encodeAlignCommand(left_front, right_front, left_back, right_back)
 
-	if user_cmd == "home":
+	elif user_cmd == "home":
 		home_to_use = int(input("home:"))
 		cmd = encodeHome(home_to_use)
 	
-	if user_cmd == "blink":
+	elif user_cmd == "blink":
 		cmd = encodeBlink(4)
 
+	elif user_cmd == "cancel":
+		cmd = encodeCancel()
+
+	else:
+		cmd = encodeCancel()
+
 	arduino.write(cmd)
-	data='0'.encode()
-	while data != b'\x00':
-		data = arduino.read()
-		if data:
-			print(data.decode(), end = "") #strip out the new lines for now
-			# (better to do .read() in the long run for this reason
+	time.sleep(0.1)

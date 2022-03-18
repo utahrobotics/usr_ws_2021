@@ -8,7 +8,8 @@ This node is the communication layer betweeen the USR Ros subsystem and the step
 #from rclpy.node import Node
 import rospy
 import yaml
-import serial, time
+import serial
+import time
 from enum import Enum
 import os
 import struct
@@ -26,6 +27,7 @@ class Command(Enum):
     stop_all = 4
     stop_one = 5
     blink_led = 6
+    home_port = 7
 
 
 class SteeringSubscriber():
@@ -39,16 +41,16 @@ class SteeringSubscriber():
             self.listener_callback)
 
         # create controller instances for each for each of the motor bases from the config file
-        tmp_file = open('./src/motors/scripts/steppers/config/stepper_config.yaml')
+        rospy.logwarn(os.getcwd())
+        tmp_file = open(
+            './config/stepper_config.yaml')
         stepper_config = yaml.safe_load(tmp_file)
 
         self.stepper_controller = StepperController(stepper_config['serial'],
                                                     stepper_config['steps'])
 
-        # intilialize motors and blink for conformation
+        # intilialize motors
         self.stepper_controller.initMotors()
-        time.sleep(.5)
-        self.stepper_controller.blink(3)
 
         # close the yaml configuration file
         tmp_file.close()
@@ -62,7 +64,7 @@ class SteeringSubscriber():
                                             msg.angles[1],
                                             msg.angles[2],
                                             msg.angles[3]
-	)
+                                            )
 
 
 class StepperController():
@@ -72,7 +74,8 @@ class StepperController():
 
     def __init__(self, serial_number, steps):
         self.serial = serial_number  # the serial number for responding to the device
-        self._mc = serial.Serial(serial_number, 115200, timeout=.1)  # teh micro controller serial instance
+        # teh micro controller serial instance
+        self._mc = serial.Serial(serial_number, 115200, timeout=.1)
         time.sleep(1)  # give the connection a second to settle
 
     def alignMotors(self, fl, fr, bl, br):
@@ -107,10 +110,13 @@ class StepperController():
         fr1, fr2, fr3, fr4 = int_to_four_bytes(fr & 0xFFFFFFFF)
         bl1, bl2, bl3, bl4 = int_to_four_bytes(bl & 0xFFFFFFFF)
         br1, br2, br3, br4 = int_to_four_bytes(br & 0xFFFFFFFF)
-        return bytearray([Command.align_all.value, int(fl1), int(fl2), int(fl3), int(fl4), int(fr1), int(fr2), int(fr3), int(fr4), int(bl1), int(bl2), int(bl3), int(bl4), int(br1), int(br2), int(br3), int(br4)])
+        return bytearray([Command.align_all.value, int(fl4), int(fl3), int(fl2), int(fl1), int(fr4), int(fr3), int(fr2), int(fr1), int(bl4), int(bl3), int(bl2), int(bl1), int(br4), int(br3), int(br2), int(br1)])
 
     def _encodeBlink(self, num_blinks):
         return bytearray([Command.blink_led.value, num_blinks])
+
+    def _encodeHome(port):
+        return bytearray([Command.home_port.value, port])
 
     def _encodeInit(self):
         return bytearray([Command.init_all.value])
@@ -139,5 +145,3 @@ def main(args=None):
 
 if __name__ == '__main__':
     main()
-
-
