@@ -11,8 +11,11 @@ import yaml
 import serial, time
 from enum import Enum
 import os
+import struct
 
 from locomotion.msg import SteerAndThrottle
+
+int_to_four_bytes = struct.Struct('<I').pack
 
 
 class Command(Enum):
@@ -26,7 +29,7 @@ class Command(Enum):
 
 
 class SteeringSubscriber():
-    # T his clas is responsible for driving all of the Maxon motor controllers using published information from the
+    # This class is responsible for driving all of the Maxon motor controllers using published information from the
     # Mobility node
     def __init__(self):
         rospy.init_node('stepper_control_node')
@@ -100,7 +103,11 @@ class StepperController():
     def _encodeAlignCommand(self, fl, fr, bl, br):
         # cmd = motor<<6 | dir<<5 | steps;
         # return cmd
-        return bytearray([Command.align_all.value, int(fl), int(fr), int(bl), int(br)])
+        fl1, fl2, fl3, fl4 = int_to_four_bytes(fl & 0xFFFFFFFF)
+        fr1, fr2, fr3, fr4 = int_to_four_bytes(fr & 0xFFFFFFFF)
+        bl1, bl2, bl3, bl4 = int_to_four_bytes(bl & 0xFFFFFFFF)
+        br1, br2, br3, br4 = int_to_four_bytes(br & 0xFFFFFFFF)
+        return bytearray([Command.align_all.value, int(fl1), int(fl2), int(fl3), int(fl4), int(fr1), int(fr2), int(fr3), int(fr4), int(bl1), int(bl2), int(bl3), int(bl4), int(br1), int(br2), int(br3), int(br4)])
 
     def _encodeBlink(self, num_blinks):
         return bytearray([Command.blink_led.value, num_blinks])

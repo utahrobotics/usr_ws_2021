@@ -1,5 +1,8 @@
 import serial, time
 from enum import Enum
+import struct
+
+int_to_four_bytes = struct.Struct('<I').pack
 
 class Command(Enum):
 	init_all = 1
@@ -13,7 +16,11 @@ class Command(Enum):
 def encodeAlignCommand(fl, fr, bl, br):
     # cmd = motor<<6 | dir<<5 | steps;
     # return cmd
-    return bytearray([Command.align_all.value, fl, fr, bl, br])
+	fl1, fl2, fl3, fl4 = int_to_four_bytes(fl & 0xFFFFFFFF)
+	fr1, fr2, fr3, fr4 = int_to_four_bytes(fr & 0xFFFFFFFF)
+	bl1, bl2, bl3, bl4 = int_to_four_bytes(bl & 0xFFFFFFFF)
+	br1, br2, br3, br4 = int_to_four_bytes(br & 0xFFFFFFFF)
+	return bytearray([Command.align_all.value, int(fl4), int(fl3), int(fl2), int(fl1), int(fr4), int(fr3), int(fr2), int(fr1), int(bl4), int(bl3), int(bl2), int(bl1), int(br4), int(br3), int(br2), int(br1)])
 
 def encodeBlink(num_blinks):
 	return bytearray([Command.blink_led.value, num_blinks])
@@ -25,7 +32,7 @@ def encodeInit():
 	return bytearray([Command.init_all.value])
 
 
-arduino = serial.Serial('COM3', 115200, timeout=.1)
+arduino = serial.Serial('COM11', 115200, timeout=.1)
 time.sleep(1) #give the connection a second to settle
 
 while True:
