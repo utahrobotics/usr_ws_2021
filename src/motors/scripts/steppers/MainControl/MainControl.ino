@@ -94,7 +94,7 @@ void recieve_command(){
         default: {
           Serial.println("recieved some wacky bytes");
           break;
-         }
+        }
       }
     }
   }
