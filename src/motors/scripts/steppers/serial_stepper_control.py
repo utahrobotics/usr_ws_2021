@@ -65,10 +65,10 @@ class SteeringSubscriber():
         # TODO: incorperate the state machince variables to decide if motors should be running or not
 
         # if motors are ready, set the new speed to each controller
-        self.stepper_controller.alignMotors(msg.angles[0],
-                                            msg.angles[1],
-                                            msg.angles[2],
-                                            msg.angles[3]
+        self.stepper_controller.alignMotors(int(msg.angles[0]),
+                                            int(msg.angles[1]),
+                                            int(msg.angles[2]),
+                                            int(msg.angles[3])
                                             )
 
 
@@ -79,6 +79,7 @@ class StepperController():
 
     def __init__(self, serial_number, steps):
         self.serial = serial_number  # the serial number for responding to the device
+	self.steps = steps
         # teh micro controller serial instance
         self._mc = serial.Serial(serial_number, 115200, timeout=.1)
         time.sleep(1)  # give the connection a second to settle
@@ -97,10 +98,12 @@ class StepperController():
         # convert from degrees to steps (TODO: verify the right direction and whatnot)
 
         # write the command to the stepper controller
-        self._mc.write(self._encodeAlignCommand(self._deg2steps(fl),
-                                                self._deg2steps(fr),
-                                                self._deg2steps(bl),
-                                                self._deg2steps(br)))
+	rospy.logwarn("degs: ")
+	rospy.logwarn(fl)
+	rospy.logwarn(fr)
+	rospy.logwarn(bl)
+	rospy.logwarn(br)
+        self._mc.write(self._encodeAlignCommand(int(fl),int(fr),int(bl),int(br)))
 
     def initMotors(self):
         self._mc.write(self._encodeInit())
@@ -109,12 +112,21 @@ class StepperController():
         self._mc.write(self._encodeBlink(num_blinks=num_blinks))
 
     def _encodeAlignCommand(self, fl, fr, bl, br):
+	rospy.logwarn("steps: ")
+	rospy.logwarn(fl)
+	rospy.logwarn(fr)
+	rospy.logwarn(bl)
+	rospy.logwarn(br)
         # cmd = motor<<6 | dir<<5 | steps;
         # return cmd
         fl1, fl2, fl3, fl4 = int_to_four_bytes(fl & 0xFFFFFFFF)
         fr1, fr2, fr3, fr4 = int_to_four_bytes(fr & 0xFFFFFFFF)
         bl1, bl2, bl3, bl4 = int_to_four_bytes(bl & 0xFFFFFFFF)
         br1, br2, br3, br4 = int_to_four_bytes(br & 0xFFFFFFFF)
+	rospy.logwarn(fl4)
+	rospy.logwarn(fr4)
+	rospy.logwarn(bl4)
+	rospy.logwarn(br4)
         return bytearray([Command.align_all.value, int(fl4), int(fl3), int(fl2), int(fl1), int(fr4), int(fr3), int(fr2), int(fr1), int(bl4), int(bl3), int(bl2), int(bl1), int(br4), int(br3), int(br2), int(br1)])
 
     def _encodeBlink(self, num_blinks):
@@ -134,7 +146,7 @@ class StepperController():
             Return:
                 steps -> the resultand steps
         """
-        return round((deg / 360) * self.steps)
+        return int(round((deg / 360) * self.steps))
 
 
 def main(args=None):
