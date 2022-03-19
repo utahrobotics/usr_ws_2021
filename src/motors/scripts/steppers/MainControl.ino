@@ -74,8 +74,16 @@ void recieve_command(){
           }
           send_msg("blink processed");
           break;
-          
-         default:
+
+		    case 0x7:
+          send_msg("home cmd recieved\n", false);
+          while(Serial.available() < 1){}
+          int driver_to_home = Serial.read();
+          home(driver_to_home);
+          send_msg("home processed");
+          break;
+
+        default:
           Serial.println("recieved some wacky bytes");
           break;
       }
@@ -100,6 +108,12 @@ void home_all(){
   }
 
   isHomed = true;
+}
+
+void home(int driver_num) {
+  while(digitalRead(homingPins[driver_num]) == 0) {
+    threads.addThread(turn_degrees, new int[2]{2, driver_num});	
+  }
 }
 
 void align_all(uint8_t degs[]){
