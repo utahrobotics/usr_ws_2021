@@ -106,11 +106,11 @@ class LocCtlr:
             locController.tankSteer(left_speed, right_speed)
 
 if __name__ == "__main__":
-    pub = rospy.Publisher('locomotion', SteerAndThrottle, queue_size=10)
+    pub = rospy.Publisher('locomotion', SteerAndThrottle, queue_size=1)
     locController = LocCtlr(pub)
     rospy.init_node('locomotion')
-    rospy.Subscriber("telemetry_joy", Joy, locController.joyCallback)
-    rospy.Subscriber("cmd_vel", Twist, locController.autonomyCallback)
+    rospy.Subscriber("telemetry_joy", Joy, locController.joyCallback, queue_size=1)
+    rospy.Subscriber("cmd_vel", Twist, locController.autonomyCallback, queue_size=1)
     rospy.spin()
 	#i = 0
 	#while True:
