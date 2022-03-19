@@ -8,7 +8,7 @@ import math
 import numpy as np
 import rospy
 from std_msgs.msg import Header
-from std_msgs.msg import Twist
+from geometry_msgs.msg import Twist
 from sensor_msgs.msg import Joy
 from locomotion.msg import SteerAndThrottle
 
@@ -22,11 +22,11 @@ class LocCtlr:
     rightMotion = 0.0
     leftMotion = 0.0
     wheelDist = 1.0
-    currentStartButtonState = false
-    previousStartButtonState = false
+    currentStartButtonState = False
+    previousStartButtonState = False
     steeringType =0
 
-    def __init__(self, Scale, _pub):
+    def __init__(self, _pub, Scale = 1):
         self.pub = _pub
         self.scale=Scale
         self.angle=0.0
@@ -35,7 +35,7 @@ class LocCtlr:
     def tankSteer(self,_leftJoystick, _rightJoystick):
         self.leftMotion = _leftJoystick * self.scale
         self.rightMotion = _rightJoystick * self.scale
-        angles = [0, 0, 0, 0]
+        angles = [90, 90, 90, 90]
         velocities = [self.leftMotion, self.leftMotion, self.rightMotion, self.rightMotion]
         H = Header()
         H.stamp = rospy.Time.now()
@@ -46,16 +46,13 @@ class LocCtlr:
         self.pub.publish(msg)
         return (angles, velocities)
 
-    def translationControl(self, _leftJoystick, _rightTrigger):
-        self.wheelCenter = [0, self.wheelDist/2]
-        self.steerIntensity = [(_leftJoystick * 2)**3, 0]
-        angleVector = np.subtract(self.wheelCenter, self.steerIntensity)
-        angleVectorUnit = angleVector / np.linalg.norm(angleVector)
-        axisX = [1, 0]
-        dot = np.dot(angleVectorUnit, axisX)
-        angle = np.arccos(dot) * 180 / math.pi
-        angles = [angle, angle, angle, angle]
-        velocities = [_rightTrigger, _rightTrigger, _rightTrigger, _rightTrigger]
+    def translationControl(self, _leftJoystickY, _rightJoystickX):
+        self.wheelCenter = [0, 0.5]
+        angle = (_rightJoystickX * 90)
+        angles = [90 - angle, 90 - angle, 90 - angle, 90 - angle]
+
+	vel = _leftJoystickY
+        velocities = [vel, vel, vel, vel]
         H = Header()
         H.stamp = rospy.Time.now()
         msg = SteerAndThrottle()
@@ -65,16 +62,12 @@ class LocCtlr:
         self.pub.publish(msg)
         return (angles, velocities)
 
-    def radialSteer(self, _leftJoystick, _rightTrigger):
-        self.wheelCenter = [0, 0.5]
-        self.steerIntensity = [(_leftJoystick * 2)**3, 0]
-        angleVector = np.subtract(self.wheelCenter, self.steerIntensity)
-        angleVectorUnit = angleVector / np.linalg.norm(angleVector)
-        axisX = [1, 0]
-        dot = np.dot(angleVectorUnit, axisX)
-        angle = np.arccos(dot) * 180 / math.pi
-        angles = [angle, -angle, angle, -angle]
-        velocities = [_rightTrigger, _rightTrigger, _rightTrigger, _rightTrigger]
+    def radialSteer(self, _leftJoystickY, _rightJoystickX):
+        angle = (_rightJoystickX * 90)
+        angles = [90 - angle, 90 + angle, 90 - angle, 90 + angle]
+
+	vel = _leftJoystickY
+        velocities = [vel, vel, vel, vel]
         H = Header()
         H.stamp = rospy.Time.now()
         msg = SteerAndThrottle()
@@ -84,19 +77,20 @@ class LocCtlr:
         self.pub.publish(msg)
         return (angles, velocities)
         
-    def joyCallback(joy):
+    def joyCallback(self, joy):
         if not rospy.get_param("/isAutonomous"):
-            print("telemetry recieved")
-            currentStartButtonState = joy["buttons"][5]
-            if currentStartButtonState and not previousStartButtonState :
-                steeringType=(steeringType+1)%3
-            if steeringType==0:
-                tankSteer(joy["axes"][0],joy["axes"][2])
-            if steeringType==1:
-                radialSteer(joy["axes"][0],joy["axes"][3])
-            if steeringType==2:
-                translationControl(joy["axes"][0],joy["axes"][3])
-            previousStartButtonState = currentStartButtonState
+            #rospy.logwarn("mode " + str(self.steeringType))
+            self.currentStartButtonState = joy.buttons[9]
+            if self.currentStartButtonState and not self.previousStartButtonState :
+                self.steeringType=(self.steeringType+1)%3
+		rospy.logwarn("switched to drive mode " + str(self.steeringType))
+            if self.steeringType==0:
+                self.tankSteer(joy.axes[1],joy.axes[5])
+            if self.steeringType==1:
+                self.radialSteer(joy.axes[1],joy.axes[2])
+            if self.steeringType==2:
+                self.translationControl(joy.axes[1],joy.axes[2])
+            self.previousStartButtonState = self.currentStartButtonState
 
     def autonomyCallback(twist):
         global locController
