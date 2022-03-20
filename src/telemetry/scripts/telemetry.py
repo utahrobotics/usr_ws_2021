@@ -21,19 +21,20 @@ def local_callback(data):
 
 if __name__ == "__main__":
 	source = rospy.get_param('/controller_source')
-	pub = rospy.Publisher('telemetry_joy', Joy,  queue_size=10)
+	pub = rospy.Publisher('telemetry_joy', Joy,  queue_size=1)
 	rospy.init_node('telemetry')
-	UDP_IP = rospy.get_param('/remote_ip')
-	UDP_PORT = 4242
-	sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-	rospy.on_shutdown(shutdown_callback)
+	
 
 	if source == "local":
 		print("local control, using joy node")
-		rospy.Subscriber("joy", Joy, local_callback)
+		rospy.Subscriber("joy", Joy, local_callback, queue_size=1)
 		rospy.spin()
 		
 	else:
+		UDP_IP = rospy.get_param('/remote_ip')
+		UDP_PORT = 4242
+		sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+		rospy.on_shutdown(shutdown_callback)
 		MESSAGE = b"Robot Init"
 		sock.sendto(MESSAGE, (UDP_IP, UDP_PORT))
 
