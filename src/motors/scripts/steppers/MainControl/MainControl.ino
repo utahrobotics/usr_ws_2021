@@ -60,10 +60,13 @@ void recieve_command(){
               //send_msg(String(degs[i]), false);
               degs[i] = int(degs[i] | (unsigned char)(read_byte) << (3-j)*8);
             }
-            send_msg(String(degs[i]),false);
+            //send_msg(String(degs[i]),false);
           }
 
           align_all(degs);
+          for(int j = 0; j <4; j++){
+            send_msg(String(desiredPositions[j])+" "+String(currentPositions[j]), false);
+          }
           send_msg("desired angles sent");
           break;
         }
@@ -92,7 +95,11 @@ void recieve_command(){
 
 void home_all(){
   bool homed[4] = {false, false, false, false};
-
+  for(int i = 0; i < 4; i++){
+    desiredPositions[i] = 90;
+    currentPositions[i] = 90;
+  }
+  
   while(std::accumulate(homed, homed + 4, 0) < 4){
     if(Serial.available() > 0){
       int cmd = Serial.read();
@@ -103,7 +110,7 @@ void home_all(){
     }
     
 
-    
+    delay(100);
     for(int i = 0; i < 4; i++){
       if(homed[i]==false){
         if(digitalRead(homingPins[i]) == 0){
@@ -185,6 +192,9 @@ void alignControllerThread(){
     for(int i = 0; i<4; i++){
       int diff = currentPositions[i] - desiredPositions[i];
       if(diff){
+        for(int j = 0; j <4; j++){
+          send_msg(String(desiredPositions[j])+" "+String(currentPositions[j]), false);
+        }
         int degrees = diff>0?-1:1;
         int driverNum = i;
         double steps = abs(degrees/(degrees_per_step/(gear_ratio*microstep)));
