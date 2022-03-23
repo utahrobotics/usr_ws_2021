@@ -4,6 +4,6 @@ footprint: [[-0.5, -0.338], [0.72, -0.338], [0.72, 0.338], [-0.5, 0.338]]
 #robot_radius: ir_of_robot
 inflation_radius: 0.55
 
-observation_sources: point_cloud_sensor
+observation_sources: realsense
 
-point_cloud_sensor: {sensor_frame: base_cam1, data_type: PointCloud2, topic: sensors/realsense/points, marking: true, clearing: true}
+realsense: {sensor_frame: camera_link, data_type: PointCloud2, topic: /camera/depth/color/points, marking: true, clearing: true}

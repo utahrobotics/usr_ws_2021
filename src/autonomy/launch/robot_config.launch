@@ -1,10 +1,9 @@
 <launch>
 
 <!-- TODO: start the node that handles publishing pointcloud info -->
- <!-- <node pkg="sensor_node_pkg" type="sensor_node_type" name="sensor_node_name" output="screen">
-    <param name="sensor_param" value="param_value" />
- </node> -->
+ <include file="$(find autonomy)/launch/realsense.launch" />
  <include file="$(find robot_tf)/launch/tf.launch" />
+<include file="$(find autonomy)/launch/localization.launch" />
  <node pkg="autonomy" type="odometry_publisher.py" name="odometry_publisher" output="screen" />
  
 
