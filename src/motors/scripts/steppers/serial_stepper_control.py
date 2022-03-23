@@ -8,9 +8,13 @@ This node is the communication layer betweeen the USR Ros subsystem and the step
 #from rclpy.node import Node
 import rospy
 import yaml
-import serial, time
+import serial
+import time
 from enum import Enum
 import os
+import struct
+import rospkg
+import threading
 
 from locomotion.msg import SteerAndThrottle
 
@@ -23,29 +27,38 @@ class Command(Enum):
     stop_all = 4
     stop_one = 5
     blink_led = 6
+    home_port = 7
+    cancel = 8
 
 
 class SteeringSubscriber():
-    # T his clas is responsible for driving all of the Maxon motor controllers using published information from the
+    # This class is responsible for driving all of the Maxon motor controllers using published information from the
     # Mobility node
     def __init__(self):
         rospy.init_node('stepper_control_node')
-        rospy.Subscriber(
-            'locomotion',
-            SteerAndThrottle,
-            self.listener_callback)
+	rospy.on_shutdown(self.shutdown)
+	# get an instance of RosPack with the default search paths
+	rospack = rospkg.RosPack()
 
-        # create controller instances for each for each of the motor bases from the config file
-        tmp_file = open('./src/motors/scripts/steppers/config/stepper_config.yaml')
+	# get the file path for rospy_tutorials
+	rospack.get_path('motors')
+
+        tmp_file = open(os.path.join(rospack.get_path('motors'), 'scripts', 'steppers', 'config', 'stepper_config.yaml'))
         stepper_config = yaml.safe_load(tmp_file)
 
+	# create controller instances for each for each of the motor bases from the config file
         self.stepper_controller = StepperController(stepper_config['serial'],
                                                     stepper_config['steps'])
 
-        # intilialize motors and blink for conformation
-        self.stepper_controller.initMotors()
-        time.sleep(.5)
-        self.stepper_controller.blink(3)
+	#self.stepper_controller.initMotors()
+
+        rospy.Subscriber(
+            'locomotion',
+            SteerAndThrottle,
+            self.listener_callback, queue_size=1)
+
+        # intilialize motors
+        
 
         # close the yaml configuration file
         tmp_file.close()
@@ -55,11 +68,14 @@ class SteeringSubscriber():
         # TODO: incorperate the state machince variables to decide if motors should be running or not
 
         # if motors are ready, set the new speed to each controller
-        self.stepper_controller.alignMotors(msg.angles[0],
-                                            msg.angles[1],
-                                            msg.angles[2],
-                                            msg.angles[3]
-	)
+	if self.stepper_controller != None:
+		self.stepper_controller.alignMotors(int(msg.angles[0]),
+		                                    int(msg.angles[1]),
+		                                    int(msg.angles[2]),
+		                                    int(msg.angles[3])
+		                                    )
+    def shutdown(self):
+	self.stepper_controller.cancel()
 
 
 class StepperController():
@@ -69,8 +85,18 @@ class StepperController():
 
     def __init__(self, serial_number, steps):
         self.serial = serial_number  # the serial number for responding to the device
-        self._mc = serial.Serial(serial_number, 115200, timeout=.1)  # teh micro controller serial instance
+	self.steps = steps
+        # teh micro controller serial instance
+        self._mc = serial.Serial(serial_number, 115200, timeout=.1)
+	self.buff = ""
         time.sleep(1)  # give the connection a second to settle
+
+	read_thread = threading.Thread(target=self.readSerial)
+	read_thread.setDaemon(True) 
+	read_thread.start()
+
+    def cancel(self):
+	self._mc.write(self._encodeCancel())
 
     def alignMotors(self, fl, fr, bl, br):
         """
@@ -86,10 +112,7 @@ class StepperController():
         # convert from degrees to steps (TODO: verify the right direction and whatnot)
 
         # write the command to the stepper controller
-        self._mc.write(self._encodeAlignCommand(self._deg2steps(fl),
-                                                self._deg2steps(fr),
-                                                self._deg2steps(bl),
-                                                self._deg2steps(br)))
+        self._mc.write(self._encodeAlignCommand(int(fl),int(fr),int(bl),int(br)))
 
     def initMotors(self):
         self._mc.write(self._encodeInit())
@@ -97,16 +120,34 @@ class StepperController():
     def blink(self, num_blinks):
         self._mc.write(self._encodeBlink(num_blinks=num_blinks))
 
+    def readSerial(self):
+	while True:
+		data = self._mc.read()
+		if data:
+			self.buff += data.decode()
+			if data == '\n' or data == '\0' or data=='':
+				rospy.logwarn(self.buff)
+
     def _encodeAlignCommand(self, fl, fr, bl, br):
         # cmd = motor<<6 | dir<<5 | steps;
         # return cmd
-        return bytearray([Command.align_all.value, int(fl), int(fr), int(bl), int(br)])
+        fl1, fl2, fl3, fl4 = self.int_to_four_bytes(fl & 0xFFFFFFFF)
+        fr1, fr2, fr3, fr4 = self.int_to_four_bytes(fr & 0xFFFFFFFF)
+        bl1, bl2, bl3, bl4 = self.int_to_four_bytes(bl & 0xFFFFFFFF)
+        br1, br2, br3, br4 = self.int_to_four_bytes(br & 0xFFFFFFFF)
+        return bytearray([Command.align_all.value, int(fl1), int(fl2), int(fl3), int(fl4), int(fr1), int(fr2), int(fr3), int(fr4), int(bl1), int(bl2), int(bl3), int(bl4), int(br1), int(br2), int(br3), int(br4)])
 
     def _encodeBlink(self, num_blinks):
         return bytearray([Command.blink_led.value, num_blinks])
 
+    def _encodeHome(port):
+        return bytearray([Command.home_port.value, port])
+
     def _encodeInit(self):
         return bytearray([Command.init_all.value])
+
+    def _encodeCancel(self):
+	return bytearray([Command.cancel.value])
 
     def _deg2steps(self, deg):
         """
@@ -116,7 +157,10 @@ class StepperController():
             Return:
                 steps -> the resultand steps
         """
-        return round((deg / 360) * self.steps)
+        return int(round((deg / 360) * self.steps))
+
+    def int_to_four_bytes(self, x):
+	return [int(x >> i & 0xff) for i in (24,16,8,0)]
 
 
 def main(args=None):
@@ -125,12 +169,6 @@ def main(args=None):
 
     rospy.spin()
 
-    # Destroy the node explicitly
-    sub_node.destroy_node()
-    rospy.shutdown()
-
 
 if __name__ == '__main__':
     main()
-
-
