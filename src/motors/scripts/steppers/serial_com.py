@@ -17,6 +17,8 @@ class Command(Enum):
 	blink_led = 6
 	home_port = 7
 	cancel = 8
+	start_manual_home = 9
+	stop_manual_home = 10
 
 def encodeAlignCommand(fl, fr, bl, br):
     # cmd = motor<<6 | dir<<5 | steps;
@@ -35,6 +37,12 @@ def encodeCancel():
 
 def encodeHome(port):
 	return bytearray([Command.home_port.value, port])
+
+def encodeManualHome(port):
+	return bytearray([Command.start_manual_home.value, port])
+
+def encodeStopManualHome():
+	return bytearray([Command.stop_manual_home.value])
 
 def encodeInit():
 	return bytearray([Command.init_all.value])
@@ -67,6 +75,13 @@ while True:
 	elif user_cmd == "home":
 		home_to_use = int(input("home:"))
 		cmd = encodeHome(home_to_use)
+	
+	elif user_cmd == "manual home":
+		home_to_use = int(input("home:"))
+		cmd = encodeManualHome(home_to_use)
+	
+	elif user_cmd == "stop home":
+		cmd = encodeStopManualHome()
 	
 	elif user_cmd == "blink":
 		cmd = encodeBlink(4)

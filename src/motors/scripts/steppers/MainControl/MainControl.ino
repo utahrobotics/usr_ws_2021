@@ -31,6 +31,10 @@ const uint16_t StepPeriodMs = 1; //was 2
 
 bool isHomed=false;
 
+// for manually homing
+bool isHoming = false;
+int beingHomed = 0;
+
 HighPowerStepperDriver drivers[4];
 
 int currentPositions[4] = {90, 90, 90, 90};
@@ -63,7 +67,13 @@ void recieve_command(){
             //send_msg(String(degs[i]),false);
           }
 
-          align_all(degs);
+          if(isHoming) {
+            desiredPositions[beingHomed] = degs[beingHomed];
+          }
+          else {
+            align_all(degs);
+          }
+
           for(int j = 0; j <4; j++){
             send_msg(String(desiredPositions[j])+" "+String(currentPositions[j]), false);
           }
@@ -83,7 +93,7 @@ void recieve_command(){
           }
           send_msg("blink processed");
           break;
-		}
+        }
 
         case 0x7: {
           send_msg("home cmd recieved\n", false);
@@ -92,7 +102,27 @@ void recieve_command(){
           home(driver_to_home);
           send_msg("home processed");
           break;
-		}
+        }
+
+        case 0x9: {
+          if(isHoming) { break; }
+          send_msg("manual home cmd recieved\n", false);
+          while(Serial.available() < 1){}
+          beingHomed = Serial.read();
+          isHoming = true;
+          send_msg("start manual home completed");
+          break;
+        }
+
+        case 0x10: {
+          send_msg("stop manual home cmd recieved\n", false);
+          while(Serial.available() < 1){}
+          int driver_to_home = Serial.read();
+          isHoming = false;
+          desiredPositions[beingHomed] = 90;
+          currentPositions[beingHomed] = 90;
+          send_msg("stop manual home completed");
+        }
 
         default: {
           Serial.println("recieved some wacky bytes");
@@ -141,9 +171,13 @@ void home_all(){
 
 void home(int driver_num) {
   while(digitalRead(homingPins[driver_num]) == 0) {
-    threads.addThread(turn_degrees, new int[2]{2, driver_num});	
+    desiredPositions[driver_num] += 1;
+    delay(100);
   }
+  desiredPositions[driver_num] = 90;
+  currentPositions[driver_num] = 90;
 }
+
 
 void align_all(int degs[]){
   for(int i = 0; i<4; i++){
