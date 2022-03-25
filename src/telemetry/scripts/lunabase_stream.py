@@ -99,7 +99,8 @@ class LunabaseStream(object):
 
     def close(self):
         self.stream.close()
-        self.broadcast_listener.close()
+        if self.broadcast_listener is not None:
+            self.broadcast_listener.close()
         self._listening_for_broadcast = False
         self._connected_to_lunabase = False
 
@@ -119,10 +120,11 @@ class LunabaseStream(object):
             self._connected_to_lunabase = True
             self.broadcast_listener = None
             self._listening_for_broadcast = False
-            print("Connected to", addr, port_str)
+            self.stream.send('\x00')
+            rospy.loginfo("Connected to" + addr + ":" + port_str)
 
         if not self._connected_to_lunabase: return
-        msg = bytearray()
+        msg = bytearray(1024)
         try:
             self.stream.recv_into(msg, 1024)
         except sock.error:
@@ -136,8 +138,8 @@ class LunabaseStream(object):
 
 
 if __name__ == "__main__":
-    rospy.loginfo(get_my_ip())
     rospy.init_node('lunabase_stream')        # tmp name until I officially overwrite telemetry
+    rospy.loginfo(get_my_ip())
     stream = LunabaseStream()
     rospy.on_shutdown(stream.close)
     stream.listen_for_broadcast(
