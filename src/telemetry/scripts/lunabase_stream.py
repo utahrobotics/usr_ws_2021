@@ -1,8 +1,10 @@
+#!/usr/bin/env python
+
 import socket as sock
 from struct import Struct, pack
 import time
-from rospy import Publisher, init_node, on_shutdown
-from enum import IntEnum
+import rospy
+from enum import IntEnum        # NOTE! Install enum34 with pip
 from std_msgs.msg import Float32
 
 
@@ -13,8 +15,6 @@ class Headers(IntEnum):
 
 
 _MY_IP = ""
-
-
 def get_my_ip():
     global _MY_IP
     if len(_MY_IP) == 0:
@@ -95,7 +95,7 @@ class LunabaseStream(object):
         self.stream.setblocking(False)
         self._connected_to_lunabase = False
 
-        self.arm_publish = Publisher("set_arm_angle", Float32, queue_size=10)
+        self.arm_publish = rospy.Publisher("set_arm_angle", Float32, queue_size=10)
 
     def close(self):
         self.stream.close()
@@ -136,11 +136,14 @@ class LunabaseStream(object):
 
 
 if __name__ == "__main__":
-    print(get_my_ip())
-    init_node('lunabase_stream')        # tmp name until I officially overwrite telemetry
+    rospy.loginfo(get_my_ip())
+    rospy.init_node('lunabase_stream')        # tmp name until I officially overwrite telemetry
     stream = LunabaseStream()
-    on_shutdown(stream.close)
-    stream.listen_for_broadcast()
+    rospy.on_shutdown(stream.close)
+    stream.listen_for_broadcast(
+        rospy.get_param("multicast_address"),
+        int(rospy.get_param("multicast_port"))
+    )
     while not rospy.is_shutdown():
         time.sleep(0.5)
         stream.poll()
