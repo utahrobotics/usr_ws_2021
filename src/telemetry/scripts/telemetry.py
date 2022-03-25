@@ -236,6 +236,7 @@ if __name__ == "__main__":
         rospy.get_param("multicast_address"),
         int(rospy.get_param("multicast_port"))
     )
+    polling_delay = float(rospy.get_param("polling_delay"))
     while not rospy.is_shutdown():
         time.sleep(0.5)
         stream.poll()
