@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import smbus
 import time
 import matplotlib.pyplot as plt
@@ -6,7 +7,6 @@ import numpy as np
 import rospy
 import collections
 from std_msgs.msg import Float32
-from matplotlib import style
 
 
 
