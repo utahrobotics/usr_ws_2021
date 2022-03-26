@@ -3,7 +3,7 @@
 import socket as sock
 from struct import Struct, pack
 import time
-from typing import NamedTuple, Tuple
+from typing import NamedTuple, Tuple        # NOTE: install typing with pip
 
 import rospy
 from enum import IntEnum  # NOTE! Install enum34 with pip
@@ -229,7 +229,6 @@ class LunabaseStream(object):
 
 if __name__ == "__main__":
     rospy.init_node('telemetry')  # tmp name until I officially overwrite telemetry
-    rospy.loginfo(get_my_ip())
     stream = LunabaseStream()
     rospy.on_shutdown(stream.close)
     stream.listen_for_broadcast(
