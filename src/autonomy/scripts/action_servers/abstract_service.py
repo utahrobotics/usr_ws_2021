@@ -2,15 +2,8 @@ import actionlib
 from abc import ABCMeta, abstractmethod
 
 
-servers = []
-
-
 class AbstractActionServer(object):
     __metaclass__ = ABCMeta
-
-    @classmethod
-    def register(cls):
-        servers.append(cls)
 
     def __init__(self, action_name, action_spec):
         self.name = action_name

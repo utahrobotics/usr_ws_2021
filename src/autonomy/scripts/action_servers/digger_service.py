@@ -1,5 +1,5 @@
 import rospy
-from abstract_service import *
+from abstract_service import AbstractActionServer
 from autonomy.msg import RetractArmAction
 
 
@@ -9,6 +9,3 @@ class RetractArm(AbstractActionServer):
 
     def execute(self, goal):
         rospy.loginfo("Executed")
-
-
-RetractArm.register()
