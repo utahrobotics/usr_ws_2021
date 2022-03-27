@@ -15,12 +15,13 @@ class AbstractActionServer(object):
     def start(self):
         self.server.start()
 
-    def stop(self, callback):
+    def stop(self, callback=None):
         if self.is_executing:
             self.stopping = True
             self.end_callback = callback
         else:
             self.server.stop()
+            if callback is None: return
             callback()
 
     def _execute(self, goal):
@@ -29,6 +30,7 @@ class AbstractActionServer(object):
         self.is_executing = False
         if self.stopping:
             self.server.stop()
+            if self.end_callback is None: return
             self.end_callback()
 
     @abstractmethod

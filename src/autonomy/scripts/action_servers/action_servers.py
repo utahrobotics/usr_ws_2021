@@ -3,15 +3,15 @@
 import rospy
 import os
 import importlib
-from abstract_service import AbstractActionServer
+from abstract_server import AbstractActionServer
 from abc import ABCMeta
 
 
 if __name__ == "__main__":
     rospy.init_node("actions")
     services = os.listdir("src/autonomy/scripts/action_servers")
-    services.remove("full_service.py")
-    services.remove("abstract_service.py")
+    services.remove("action_servers.py")
+    services.remove("abstract_server.py")
     servers = []
 
     for service_path in services:

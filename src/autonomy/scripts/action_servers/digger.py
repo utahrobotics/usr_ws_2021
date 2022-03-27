@@ -1,5 +1,5 @@
 import rospy
-from abstract_service import AbstractActionServer
+from abstract_server import AbstractActionServer
 from autonomy.msg import RetractArmAction
 
 
