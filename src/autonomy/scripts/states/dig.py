@@ -1,4 +1,5 @@
 from smach import State
+import rospy
 
 
 class Dig(State):

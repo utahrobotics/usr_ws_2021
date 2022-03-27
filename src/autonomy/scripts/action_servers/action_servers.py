@@ -9,7 +9,7 @@ from abc import ABCMeta
 
 if __name__ == "__main__":
     rospy.init_node("actions")
-    services = os.listdir("src/autonomy/scripts/action_servers")
+    services = os.listdir(rospy.get_param("actions_path"))
     services.remove("action_servers.py")
     services.remove("abstract_server.py")
     servers = []

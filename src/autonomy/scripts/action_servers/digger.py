@@ -5,7 +5,7 @@ from autonomy.msg import RetractArmAction
 
 class RetractArm(AbstractActionServer):
     def __init__(self):
-        super(RetractArm, self).__init__('retract_arm', RetractArmAction)
+        AbstractActionServer.__init__(self, 'retract_arm', RetractArmAction)
 
     def execute(self, goal):
         rospy.loginfo("Executed")
