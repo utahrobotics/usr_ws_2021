@@ -48,7 +48,7 @@ find_package(catkin REQUIRED COMPONENTS
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
 find_package(catkin REQUIRED genmsg actionlib_msgs)
-add_action_files(DIRECTORY actions FILES RetractArm.action Initialize.action)
+add_action_files(DIRECTORY actions FILES MoveArm.action Initialize.action)
 generate_messages(DEPENDENCIES actionlib_msgs)
 
 ################################################
