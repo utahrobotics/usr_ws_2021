@@ -365,13 +365,14 @@ static double tspin, tfill, tpdebug, tpimu, tpvel, tptf, tptotal;
 static int lmsgdebug, lmsgimu, lmsgvel, lmsgtf, lmsgtotal;
 
 void loop() {
+    char debug_str[999];
     if (ready) {
         DETACHCLK
 
         int lmsgdbg = 0;
 
         double now = seconds();
-        char debug_str[999];
+
         if (abs(DT - data_period) > 10e-6) {
             sprintf(debug_str, "Last timestamp diff: %.3f ms", DT*1e3);
             debug_msg.data = debug_str;
@@ -422,6 +423,12 @@ void loop() {
                 lmsgtf = tfbroadcaster.sendTransform(transform);
                 tptf = seconds() - now;
             }
+            else {
+                lmsgvel = lmsgtf = 0;
+            }
+        }
+        else {
+            lmsgimu = lmsgvel = lmsgtf = 0;
         }
 
         lmsgdebug = lmsgdbg;
@@ -438,7 +445,17 @@ void loop() {
         double now = seconds();
         nh.spinOnce();
         tspin = seconds() - now;
-        while (spin);
+        uint32_t begin_ms = millis(), current_ms;
+        while (spin) {
+            current_ms = millis();
+            if (current_ms - begin_ms > data_period) {
+                sprintf(debug_str, "No data (%lu)", current_ms);
+                debug_msg.data = debug_str;
+                debug_pub.publish(&debug_msg);
+                nh.spinOnce();
+                begin_ms = current_ms;
+            }
+        }
     }
     else if (!interrupt) {
         /* enable IMU clock interrupt */
