@@ -1,0 +1,11 @@
+<launch>
+	<param name="controller_source" value="local" />
+	<param name="isAutonomous" value="false" />
+	<node pkg="joy" type="joy_node" name="joy_node">
+		<param name="autorepeat_rate" value="2" />
+	</node>
+	<node pkg="telemetry" type="telemetry.py" name="telemetry" />
+	<node pkg="locomotion" type="steering.py" name="steering" />
+	<node pkg="motors" type="maxon_drive_controller.py" name="brushless" />
+</launch>
+

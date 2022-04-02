@@ -15,7 +15,6 @@ class DrivingSubscriber():
     #This clas is responsible for driving all of the Maxon motor controllers using published information from the 
     # Mobility node
     def __init__(self):
-        self.subscription = rospy.Subscriber('locomotion', SteerAndThrottle, self.listener_callback)
 
         #create controller instances for each for each of the motor bases from the config file
 
@@ -44,6 +43,7 @@ class DrivingSubscriber():
                                                      ready_pin=motor_config['back_right']['pins']['ready'],
                                                      enable_pin=motor_config['back_right']['pins']['enable'],
                                                      inverted=motor_config['back_right']['inverted'])
+	self.subscription = rospy.Subscriber('locomotion', SteerAndThrottle, self.listener_callback, queue_size=1)
 
 
     def listener_callback(self, msg):
@@ -56,9 +56,10 @@ class DrivingSubscriber():
         
         # if motors are ready, set the new speed to each controller
 	# TODO: check order
+	#rospy.logwarn(msg.throttles[0])
         self.controllers['front_left'].set_speed(msg.throttles[0])
-        self.controllers['front_right'].set_speed(msg.throttles[1])
-        self.controllers['back_left'].set_speed(msg.throttles[2])
+        self.controllers['front_right'].set_speed(msg.throttles[2])
+        self.controllers['back_left'].set_speed(msg.throttles[1])
         self.controllers['back_right'].set_speed(msg.throttles[3])
 
 
@@ -116,8 +117,8 @@ class MaxonController():
             GPIO.output(self.dir_pin, level)
 
         # calcualte the duty cycle ranging from 0 - 100 for 0%-100%
-        duty_cycle = 100 * round(speed, 2)
-        print(duty_cycle)
+        duty_cycle = abs(100 * round(speed, 2))
+        #if self.speed_pin == 32: rospy.logwarn(duty_cycle)
         self.pwm_sig.ChangeDutyCycle(duty_cycle)
         return
 
