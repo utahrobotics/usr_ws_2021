@@ -27,4 +27,4 @@ if __name__ == "__main__":
 
     for server in servers:
         server.start()
-        rospy.loginfo(server.name + " started")
+        rospy.logwarn(server.name + " started")

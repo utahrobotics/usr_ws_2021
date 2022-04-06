@@ -3,7 +3,7 @@
 import rospy
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 from actionlib import SimpleActionClient
-from autonomy.msg import RetractArmAction, RetractArmGoal, InitializeAction, InitializeGoal
+from autonomy.msg import MoveArmAction, MoveArmGoal, InitializeAction, InitializeGoal
 
 
 class ActionResult:
@@ -18,7 +18,7 @@ class ActionResult:
 class ActionClient(object):
     def __init__(self):
         self._move_base = SimpleActionClient('move_base', MoveBaseAction)
-        self._retract_arm = SimpleActionClient('retract_arm', RetractArmAction)
+        self._retract_arm = SimpleActionClient('retract_arm', MoveArmAction)
         self._initialize = SimpleActionClient('initialize', InitializeAction)
 
     def wait_for_servers(self):
@@ -36,7 +36,7 @@ class ActionClient(object):
         return ActionResult(self._move_base)
 
     def retract_arm(self, fully_retract=False):
-        goal = RetractArmGoal()
+        goal = MoveArmGoal()
         goal.fully_retract = fully_retract
         self._retract_arm.send_goal(goal)
         return ActionResult(self._retract_arm)

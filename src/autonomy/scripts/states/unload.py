@@ -7,5 +7,5 @@ class Unload(State):
         State.__init__(self, outcomes=['finished'])
 
     def execute(self, userdata):
-        rospy.loginfo('Unloading complete')
+        rospy.logwarn('Unloading complete')
         return 'finished'

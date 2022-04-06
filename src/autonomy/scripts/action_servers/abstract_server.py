@@ -26,7 +26,7 @@ class AbstractActionServer(object):
 
     def _execute(self, goal):
         self.is_executing = True
-        self.execute(goal)
+        self.server.set_succeeded(self.execute(goal))
         self.is_executing = False
         if self.stopping:
             self.server.stop()

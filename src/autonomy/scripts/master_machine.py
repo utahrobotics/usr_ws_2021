@@ -19,8 +19,9 @@ if __name__ == "__main__":
     with mm:
         StateMachine.add('Init', Initialize(), transitions={'finished': 'Drive'})
         StateMachine.add('Drive', Drive(), transitions={'reached_dig_site': 'Dig', 'reached_bin': 'Unload'})
-        StateMachine.add('Dig', Dig(), transitions={'finished': 'finished'})
-        # StateMachine.add('Dig', Dig(), transitions={'finished': 'Drive'})
-        # StateMachine.add('Unload', Unload(), transitions={'finished': 'Drive'})
+        # StateMachine.add('Dig', Dig(), transitions={'finished': 'finished'})
+        StateMachine.add('Dig', Dig(), transitions={'finished': 'Drive'})
+        StateMachine.add('Unload', Unload(), transitions={'finished': 'finished'})
 
     mm.execute()
+    rospy.logwarn("State machine finished!")
