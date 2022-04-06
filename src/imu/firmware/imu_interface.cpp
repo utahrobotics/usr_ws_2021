@@ -426,6 +426,7 @@ void setup() {
     while (!nh.connected()) {
         nh.spinOnce();
     }
+    digitalWriteFast(13, 1);
 
     debug_msg.data = "Finished setup";
     debug_pub.publish(&debug_msg);
