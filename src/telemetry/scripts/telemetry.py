@@ -7,15 +7,17 @@ from typing import NamedTuple, Tuple        # NOTE: install typing with pip
 
 import rospy
 from enum import IntEnum  # NOTE! Install enum34 with pip
-from std_msgs.msg import Float32, Header
+from std_msgs.msg import Float32, Header, Bool
 from sensor_msgs.msg import Joy
 
 
-class Headers(IntEnum):
+class MsgHeaders(IntEnum):
     REQUEST_TERMINATE = 0
     ODOMETRY = 1
     ARM_ANGLE = 2
     JOY_INPUT = 3
+    MAKE_AUTONOMOUS = 4
+    MAKE_MANUAL = 5
 
 
 JoyInput = NamedTuple('JoyInput', [
@@ -40,19 +42,10 @@ def get_my_ip():
 _i32_struct = Struct("<i")
 _f32_struct = Struct("<f")
 _f64_struct = Struct("<d")
-
-
 # The following serialize methods can accept a tuple of numbers; All the numbers will be serialized contiguously
-def serialize_i32(num):
-    return _i32_struct.pack(num)
-
-
-def serialize_f32(num):
-    return _f32_struct.pack(num)
-
-
-def serialize_f64(num):
-    return _f64_struct.pack(num)
+serialize_i32 = _i32_struct.pack
+serialize_f32 = _f32_struct.pack
+serialize_f64 = _f64_struct.pack
 
 
 def serialize_bool_array(bools):
@@ -102,16 +95,9 @@ def deserialize_bool_array(data, expected_size):
 # IMPORTANT NOTE
 # The following deserialize methods attempt to deserialize as much as they can from the byte stream
 # So they all return tuples
-def deserialize_i32(data):
-    return _i32_struct.unpack(data)
-
-
-def deserialize_f32(data):
-    return _f32_struct.unpack(data)
-
-
-def deserialize_f64(data):
-    return _f64_struct.unpack(data)
+deserialize_i32 = _i32_struct.unpack
+deserialize_f32 = _f32_struct.unpack
+deserialize_f64 = _f64_struct.unpack
 
 
 class DeserializationStream(object):
@@ -173,15 +159,19 @@ class LunabaseStream(object):
         self.broadcast_listener.setblocking(False)
         self._listening_for_broadcast = False
 
-        self.stream = sock.socket(sock.AF_INET, sock.SOCK_DGRAM)
-        self.stream.setblocking(False)
+        self.udp_stream = sock.socket(sock.AF_INET, sock.SOCK_DGRAM)
+        self.udp_stream.setblocking(False)
+        self.tcp_stream = sock.socket(sock.AF_INET, sock.SOCK_STREAM)
+        self.tcp_stream.setblocking(False)
         self._connected_to_lunabase = False
 
         self.arm_publish = rospy.Publisher("set_arm_angle", Float32, queue_size=10)
         self.joy_publish = rospy.Publisher("telemetry_joy", Joy, queue_size=10)
+        self.autonomy_publish = rospy.Publisher("set_autonomy", Bool, queue_size=10)
 
     def close(self):
-        self.stream.close()
+        self.udp_stream.close()
+        self.tcp_stream.close()
         if self.broadcast_listener is not None:
             self.broadcast_listener.close()
         self._listening_for_broadcast = False
@@ -199,36 +189,47 @@ class LunabaseStream(object):
                 addr, port_str = self.broadcast_listener.recv(1024).split(":")
             except sock.error:
                 return
-            self.stream.connect((addr, int(port_str)))
+            self.udp_stream.connect((addr, int(port_str)))
+            self.tcp_stream.connect((addr, int(port_str) + 1))
             self._connected_to_lunabase = True
             self.broadcast_listener = None
             self._listening_for_broadcast = False
-            self.stream.send('\x00')
             rospy.loginfo("Connected to" + addr + ":" + port_str)
 
         if not self._connected_to_lunabase: return
         msg = bytearray(1024)
         try:
-            self.stream.recv_into(msg, 1024)
+            self.udp_stream.recv_into(msg, 1024)
+            self._handle_message(msg)
         except sock.error:
-            return
+            pass
 
+        try:
+            self.tcp_stream.recv_into(msg, 1024)
+            self._handle_message(msg)
+        except sock.error:
+            pass
+
+    def _handle_message(self, msg):
         header = msg[0]
         del msg[0]
-        if header == Headers.REQUEST_TERMINATE:
-            pass
-        elif header == Headers.ARM_ANGLE:
+        if header == MsgHeaders.REQUEST_TERMINATE:
+            rospy.logwarn("Remote base wants us to terminate")
+        elif header == MsgHeaders.ARM_ANGLE:
             self.arm_publish.publish(deserialize_f32(msg)[0])
-        elif header == Headers.JOY_INPUT:
+        elif header == MsgHeaders.JOY_INPUT:
             joy_inp = DeserializationStream(msg).deserialize_joy()
             joy_header = Header()
             joy_header.stamp = rospy.Time.now()
-            joy_msg = Joy(header=joy_header, axes=joy_inp.axes, buttons=joy_inp.buttons)
-            self.joy_publish.publish(joy_msg)
+            self.joy_publish.publish(Joy(header=joy_header, axes=joy_inp.axes, buttons=joy_inp.buttons))
+        elif header == MsgHeaders.MAKE_AUTONOMOUS:
+            self.autonomy_publish.publish(Bool(data=True))
+        elif header == MsgHeaders.MAKE_MANUAL:
+            self.autonomy_publish.publish(Bool(data=False))
 
 
 if __name__ == "__main__":
-    rospy.init_node('telemetry')  # tmp name until I officially overwrite telemetry
+    rospy.init_node('telemetry')
     stream = LunabaseStream()
     rospy.on_shutdown(stream.close)
     stream.listen_for_broadcast(
