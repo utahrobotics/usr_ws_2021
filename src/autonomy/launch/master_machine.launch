@@ -16,8 +16,6 @@
     </node>
 
 	<node pkg="autonomy" type="action_servers.py" name="actions" />
-        <param name="actions_path" value="$(find autonomy)/scripts/action_servers/" />
-        <param name="actions_path" value="$(find autonomy)/scripts/action_servers/" />
 	<node pkg="autonomy" type="master_machine.py" name="master_machine" />
 
 

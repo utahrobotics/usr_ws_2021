@@ -1,30 +1,21 @@
 #! /usr/bin/env python
 
 import rospy
-import os
-import importlib
-from abstract_server import AbstractActionServer
-from abc import ABCMeta
+
+from initializer import Initialize
+from digger import MoveArm
+
+init = Initialize()
+dig = MoveArm()
+
+
+def start_servers():
+    init.start()
+    dig.start()
 
 
 if __name__ == "__main__":
     rospy.init_node("actions")
-    services = os.listdir(rospy.get_param("actions_path"))
-    services.remove("action_servers.py")
-    services.remove("abstract_server.py")
-    servers = []
-
-    for service_path in services:
-        if service_path.endswith("pyc"): continue
-        service = importlib.import_module(service_path.split(".")[0])
-
-        for item_name in dir(service):
-            if item_name in ("ABCMeta", "AbstractActionServer"): continue
-            cls = service.__getattribute__(item_name)
-            if type(cls) != ABCMeta or cls.__base__ != AbstractActionServer: continue
-            # THe constructor of the server should not have parameters
-            servers.append(cls())
-
-    for server in servers:
-        server.start()
-        rospy.logwarn(server.name + " started")
+    start_servers()
+    rospy.logwarn("Action servers started")
+    rospy.spin()
