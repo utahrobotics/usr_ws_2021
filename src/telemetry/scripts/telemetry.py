@@ -215,15 +215,19 @@ class LunabaseStream(object):
         del msg[0]
         if header == MsgHeaders.REQUEST_TERMINATE:
             rospy.logwarn("Remote base wants us to terminate")
+
         elif header == MsgHeaders.ARM_ANGLE:
             self.arm_publish.publish(deserialize_f32(msg)[0])
+
         elif header == MsgHeaders.JOY_INPUT:
             joy_inp = DeserializationStream(msg).deserialize_joy()
             joy_header = Header()
             joy_header.stamp = rospy.Time.now()
             self.joy_publish.publish(Joy(header=joy_header, axes=joy_inp.axes, buttons=joy_inp.buttons))
+
         elif header == MsgHeaders.MAKE_AUTONOMOUS:
             self.autonomy_publish.publish(Bool(data=True))
+
         elif header == MsgHeaders.MAKE_MANUAL:
             self.autonomy_publish.publish(Bool(data=False))
 

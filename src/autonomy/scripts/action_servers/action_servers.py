@@ -2,15 +2,17 @@
 
 import rospy
 
-from initialize_server import Initialize
-from arm_server import MoveArm
+from initialize_server import InitializeServer
+from arm_server import MoveArmServer, MoveDiggerServer
 
 
 if __name__ == "__main__":
     rospy.init_node("actions")
-    init = Initialize()
-    dig = MoveArm()
+    init = InitializeServer()
+    move_arm = MoveArmServer()
+    move_digger = MoveDiggerServer()
     init.start()
-    dig.start()
+    move_arm.start()
+    move_digger.start()
     rospy.logwarn("Action servers started")
     rospy.spin()
