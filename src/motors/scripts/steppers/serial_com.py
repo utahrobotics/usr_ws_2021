@@ -7,6 +7,7 @@ COM = "/dev/stepper_teensy"
 arduino = serial.Serial(COM, 115200, timeout=.1)
 
 int_to_four_bytes = struct.Struct('<I').pack
+bytes_to_int = struct.Struct('<I').unpack
 
 class Command(Enum):
 	init_all = 1
@@ -27,7 +28,10 @@ def encodeAlignCommand(fl, fr, bl, br):
 	fr1, fr2, fr3, fr4 = int_to_four_bytes(fr & 0xFFFFFFFF)
 	bl1, bl2, bl3, bl4 = int_to_four_bytes(bl & 0xFFFFFFFF)
 	br1, br2, br3, br4 = int_to_four_bytes(br & 0xFFFFFFFF)
-	return bytearray([Command.align_all.value, int(fl4), int(fl3), int(fl2), int(fl1), int(fr4), int(fr3), int(fr2), int(fr1), int(bl4), int(bl3), int(bl2), int(bl1), int(br4), int(br3), int(br2), int(br1)])
+	print(fr1, fr2, fr3, fr4)
+	print(bl1, bl2, bl3, bl4)	
+	print(br1, br2, br3, br4)
+	return bytearray([Command.align_all.value, (fl4), (fl3), (fl2), (fl1), (fr4), (fr3), (fr2), (fr1), (bl4), (bl3), (bl2), (bl1), (br4), (br3), (br2), (br1)])
 
 def encodeBlink(num_blinks):
 	return bytearray([Command.blink_led.value, num_blinks])
@@ -51,7 +55,9 @@ def readSerial():
 	while True:
 		data = arduino.read()
 		if data:
-			print(data.decode(), end = "") #strip out the new lines for now
+			# print(data.decode(), end = "") #strip out the new lines for now
+			print(data.decode(),)
+			# pass
 
 time.sleep(1) #give the connection a second to settle
 
@@ -60,7 +66,7 @@ read_thread.setDaemon(True)
 read_thread.start()
 
 while True:
-	user_cmd = input("\nEnter a command:\n")
+	user_cmd = raw_input("\nEnter a command:\n")
 	
 	if user_cmd == "init":
 		cmd = encodeInit()
