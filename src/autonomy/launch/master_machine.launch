@@ -7,16 +7,17 @@
     <!--- Run AMCL -->
     <!-- <include file="$(find amcl)/examples/amcl_omni.launch" /> -->
 
-    <node pkg="move_base" type="move_base" respawn="false" name="move_base" output="screen">
-        <rosparam file="$(find autonomy)/costmap_common_params.yaml" command="load" ns="global_costmap" />
-        <rosparam file="$(find autonomy)/costmap_common_params.yaml" command="load" ns="local_costmap" />
-        <rosparam file="$(find autonomy)/local_costmap_params.yaml" command="load" />
-        <rosparam file="$(find autonomy)/global_costmap_params.yaml" command="load" />
-        <rosparam file="$(find autonomy)/base_local_planner_params.yaml" command="load" />
-    </node>
+<!--Uncomment when tf works properly-->
+<!--    <node pkg="move_base" type="move_base" respawn="false" name="move_base" output="screen">-->
+<!--        <rosparam file="$(find autonomy)/costmap_common_params.yaml" command="load" ns="global_costmap" />-->
+<!--        <rosparam file="$(find autonomy)/costmap_common_params.yaml" command="load" ns="local_costmap" />-->
+<!--        <rosparam file="$(find autonomy)/local_costmap_params.yaml" command="load" />-->
+<!--        <rosparam file="$(find autonomy)/global_costmap_params.yaml" command="load" />-->
+<!--        <rosparam file="$(find autonomy)/base_local_planner_params.yaml" command="load" />-->
+<!--    </node>-->
 
-	<node pkg="autonomy" type="action_servers.py" name="actions" />
 	<node pkg="autonomy" type="master_machine.py" name="master_machine" />
+	<node pkg="autonomy" type="action_servers.py" name="actions" />
 
 
 </launch> 

@@ -8,4 +8,5 @@ class Initialize(AbstractActionServer):
         AbstractActionServer.__init__(self, 'initialize', InitializeAction)
 
     def execute(self, goal):
+        rospy.sleep(1)
         rospy.loginfo("Initialized")

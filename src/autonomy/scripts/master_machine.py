@@ -3,7 +3,6 @@
 import rospy
 from smach import StateMachine
 from states import *
-from action_servers.action_servers import start_servers
 
 
 if __name__ == "__main__":
@@ -14,7 +13,7 @@ if __name__ == "__main__":
     mm.userdata.driving_to_site = True
 
     action_client = ActionClient()
-    # action_client.wait_for_servers()
+    action_client.wait_for_servers()
     mm.userdata.action_client = action_client
 
     with mm:
