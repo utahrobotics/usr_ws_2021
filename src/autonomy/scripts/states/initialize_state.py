@@ -2,7 +2,7 @@ from smach import State
 import rospy
 
 
-class Initialize(State):
+class InitializeState(State):
     def __init__(self):
         State.__init__(self, outcomes=['finished'], input_keys=["action_client"], output_keys=["action_client"])
 

@@ -2,8 +2,8 @@
 
 import rospy
 
-from initializer import Initialize
-from digger import MoveArm
+from initialize_server import Initialize
+from arm_server import MoveArm
 
 
 if __name__ == "__main__":

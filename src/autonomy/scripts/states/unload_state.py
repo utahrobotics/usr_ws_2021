@@ -2,7 +2,7 @@ from smach import State
 import rospy
 
 
-class Unload(State):
+class UnloadState(State):
     def __init__(self):
         State.__init__(self, outcomes=['finished'])
 

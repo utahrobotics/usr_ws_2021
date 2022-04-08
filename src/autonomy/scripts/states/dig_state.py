@@ -2,7 +2,7 @@ from smach import State
 import rospy
 
 
-class Dig(State):
+class DigState(State):
     def __init__(self):
         State.__init__(self, outcomes=['finished'], input_keys=["driving_to_site"], output_keys=["driving_to_site"])
 

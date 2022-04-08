@@ -2,7 +2,7 @@ from smach import State
 import rospy
 
 
-class Drive(State):
+class DriveState(State):
     def __init__(self):
         State.__init__(self, outcomes=['reached_dig_site', 'reached_bin'], input_keys=["driving_to_site"])
 

@@ -3,7 +3,7 @@ from abstract_server import AbstractActionServer
 from autonomy.msg import MoveArmAction
 
 
-class MoveArm(AbstractActionServer):
+class MoveArmServer(AbstractActionServer):
     def __init__(self):
         AbstractActionServer.__init__(self, 'move_arm', MoveArmAction)
 
