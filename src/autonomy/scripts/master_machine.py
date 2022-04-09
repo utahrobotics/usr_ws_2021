@@ -17,10 +17,11 @@ if __name__ == "__main__":
     mm.userdata.action_client = action_client
 
     with mm:
-        StateMachine.add('Init', Initialize(), transitions={'finished': 'Drive'})
-        StateMachine.add('Drive', Drive(), transitions={'reached_dig_site': 'Dig', 'reached_bin': 'Unload'})
-        StateMachine.add('Dig', Dig(), transitions={'finished': 'finished'})
-        # StateMachine.add('Dig', Dig(), transitions={'finished': 'Drive'})
-        # StateMachine.add('Unload', Unload(), transitions={'finished': 'Drive'})
+        StateMachine.add('Init', InitializeState(), transitions={'finished': 'Drive', 'manual': 'Manual'})
+        StateMachine.add('Drive', DriveState(), transitions={'reached_dig_site': 'Dig', 'reached_bin': 'Unload', 'manual': 'Manual'})
+        StateMachine.add('Dig', DigState(), transitions={'finished': 'Drive', 'manual': 'Manual'})
+        StateMachine.add('Unload', UnloadState(), transitions={'finished': 'finished', 'manual': 'Manual'})
+        StateMachine.add('Manual', ManualState(), transitions={'drive': 'Drive', 'dig': 'Dig', 'unload': 'Unload'})
 
     mm.execute()
+    rospy.logwarn("State machine finished!")

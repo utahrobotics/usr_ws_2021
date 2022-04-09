@@ -3,9 +3,18 @@ from abc import ABCMeta, abstractmethod
 
 
 class AbstractActionServer(object):
+    """
+    ActionServers are recommended to inherit this class
+    You only need to override the execute method
+    """
     __metaclass__ = ABCMeta
 
     def __init__(self, action_name, action_spec):
+        """
+        Starts up the SimpleActionServer
+        @param action_name: The name of the action
+        @param action_spec: The action goal type
+        """
         self.name = action_name
         self.stopping = False
         self.is_executing = False
@@ -26,7 +35,7 @@ class AbstractActionServer(object):
 
     def _execute(self, goal):
         self.is_executing = True
-        self.execute(goal)
+        self.server.set_succeeded(self.execute(goal))
         self.is_executing = False
         if self.stopping:
             self.server.stop()
