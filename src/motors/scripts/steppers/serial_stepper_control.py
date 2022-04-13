@@ -87,6 +87,7 @@ class SteeringSubscriber():
 							)
 	def joyCallback(self, joy):
 		if joy.axes[1]: #stop manual home if y is pressed
+			self.stepper_controller.StopManualHome()
 			result = HomeMotorManualResult()
 			result.success = True;
 			self.a_server.set_succeeded(result)
@@ -97,6 +98,8 @@ class SteeringSubscriber():
 	def start_manual_home_cb(self, motorToHome):
 		feedback = HomeMotorManualFeedback()
 		rate = rospy.Rate(10)
+
+		self.stepper_controller.StartManualHome(motorToHome)
 
 		while(true):
 			if self.a_server.is_preempt_requested():
@@ -146,6 +149,12 @@ class StepperController():
 	def initMotors(self):
 		self._mc.write(self._encodeInit())
 
+	def StartManualHome(self, port):
+		self._mc.write(self._encodeManualHome(port))
+
+	def StopManualHome(self):
+		self._mc.write(self._encodeStopManualHome())
+
 	def blink(self, num_blinks):
 		self._mc.write(self._encodeBlink(num_blinks=num_blinks))
 
@@ -173,7 +182,7 @@ class StepperController():
 		return bytearray([Command.home_port.value, port])
 
 	def encodeManualHome(port):
-		return bytearray([Command.start_manual_home.value, port])
+		return bytearray([Command.start_manual_home.value, port & 0xFF])
 
 	def encodeStopManualHome():
 		return bytearray([Command.stop_manual_home.value])
