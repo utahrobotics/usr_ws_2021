@@ -22,7 +22,7 @@ class MsgHeaders(IntEnum):
 
 JoyInput = NamedTuple('JoyInput', [
     ('axes', Tuple[float, float, float, float, float, float]),
-    ('buttons', Tuple[bool, bool, bool, bool, bool, bool, bool, bool, bool, bool, bool, bool, bool, bool])
+    ('buttons', Tuple[bool, bool, bool, bool, bool, bool, bool, bool, bool, bool])
 ])
 
 
@@ -142,7 +142,7 @@ class DeserializationStream(object):
     def deserialize_joy(self):
         inp = JoyInput(
             self.deserialize_f32(6),
-            tuple(deserialize_bool_array(self.data[0:2], 14))
+            tuple(deserialize_bool_array(self.data[0:2], 10))
         )
         del self.data[0:2]
         return inp
