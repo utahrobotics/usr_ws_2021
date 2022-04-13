@@ -1,0 +1,10 @@
+# Goal
+int32 motor
+
+---
+#Result
+bool success
+
+---
+#Feedback
+bool isRunning

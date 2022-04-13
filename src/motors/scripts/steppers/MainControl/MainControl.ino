@@ -16,6 +16,9 @@ uint8_t homingPins[4] = {3, 3, 33, 20};
 const uint8_t CSPins[4] = {0, 29, 36, 23};
 const uint8_t FaultPins[4] = {1, 30, 35, 22}; //currently unused
 const uint8_t StallPin[4] = {2, 31, 34,21}; //currently unused
+const uint8_t stepPins[4] = {80, 81, 82, 83};
+const uint8_t dirPin[4] = {84, 85, 86, 87};
+
 
 const double degrees_per_step = 1.8;
 const double microstep = 2; //2^1, n = 0 - 8 //was 4
@@ -248,14 +251,19 @@ void alignControllerThread(){
         int driverNum = i;
         double steps = abs(degrees/(degrees_per_step/(gear_ratio*microstep)));
         if(degrees>=0){
-          drivers[driverNum].setDirection(0);
+          //drivers[driverNum].setDirection(0);
+	  digitalWrite(dirPins[driverNum], LOW);
         }
         else{
-          drivers[driverNum].setDirection(1);
+          //drivers[driverNum].setDirection(1);
+	  digitalWrite(dirPins[driverNum], HIGH);
         }
         for(unsigned int x = 0; x <= steps; x++)
         {
-          drivers[driverNum].step();
+          //drivers[driverNum].step();
+	  digitalWrite(dirPins[driverNum], HIGH);
+	  delayMicroseconds(100);
+	  digitalWrite(dirPins[driverNum], LOW);
           delayMicroseconds(StepPeriodUs);
         }
         currentPositions[i] += degrees;
