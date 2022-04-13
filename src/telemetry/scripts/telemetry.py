@@ -9,6 +9,8 @@ import rospy
 from enum import IntEnum  # NOTE! Install enum34 with pip
 from std_msgs.msg import Float32, Header, Bool
 from sensor_msgs.msg import Joy
+from motors.msg import HomeMotorManualAction, HomeMotorManualGoal
+from actionlib import SimpleActionClient
 
 
 class MsgHeaders(IntEnum):
@@ -18,6 +20,7 @@ class MsgHeaders(IntEnum):
     JOY_INPUT = 3
     MAKE_AUTONOMOUS = 4
     MAKE_MANUAL = 5
+    START_MANUAL_HOME = 6
 
 
 JoyInput = NamedTuple('JoyInput', [
@@ -168,6 +171,7 @@ class LunabaseStream(object):
         self.arm_publish = rospy.Publisher("set_arm_angle", Float32, queue_size=10)
         self.joy_publish = rospy.Publisher("telemetry_joy", Joy, queue_size=10)
         self.autonomy_publish = rospy.Publisher("set_autonomy", Bool, queue_size=10)
+        self.manual_home_client = SimpleActionClient("home_motor_manual_as", HomeMotorManualAction)
 
     def close(self):
         self.udp_stream.close()
@@ -226,6 +230,11 @@ class LunabaseStream(object):
             self.autonomy_publish.publish(Bool(data=True))
         elif header == MsgHeaders.MAKE_MANUAL:
             self.autonomy_publish.publish(Bool(data=False))
+        elif header == MsgHeaders.START_MANUAL_HOME:
+            goal = HomeMotorManualGoal()
+            goal.motor = deserialize_i32(msg[1])
+            self.manual_home_client.send_goal(goal)
+            rospy.logwarn("manually homing! ;-)")
 
 
 if __name__ == "__main__":
