@@ -20,7 +20,9 @@ class MsgHeaders(IntEnum):
     JOY_INPUT = 3
     MAKE_AUTONOMOUS = 4
     MAKE_MANUAL = 5
-    START_MANUAL_HOME = 6
+    ECHO = 6
+    START_MANUAL_HOME = 7
+    CONNECTED = 8
 
 
 JoyInput = NamedTuple('JoyInput', [
@@ -163,9 +165,7 @@ class LunabaseStream(object):
         self._listening_for_broadcast = False
 
         self.udp_stream = sock.socket(sock.AF_INET, sock.SOCK_DGRAM)
-        self.udp_stream.setblocking(False)
         self.tcp_stream = sock.socket(sock.AF_INET, sock.SOCK_STREAM)
-        self.tcp_stream.setblocking(False)
         self._connected_to_lunabase = False
 
         self.arm_publish = rospy.Publisher("set_arm_angle", Float32, queue_size=10)
@@ -190,11 +190,14 @@ class LunabaseStream(object):
     def poll(self):
         if self._listening_for_broadcast:
             try:
-                addr, port_str = self.broadcast_listener.recv(1024).split(":")
+                addr, port_str = str(self.broadcast_listener.recv(1024), "utf-8").split(":")
             except sock.error:
                 return
             self.udp_stream.connect((addr, int(port_str)))
             self.tcp_stream.connect((addr, int(port_str) + 1))
+            self.udp_stream.setblocking(False)
+            self.tcp_stream.setblocking(False)
+            self.tcp_stream.sendall(bytes("lmao", "utf-8"))
             self._connected_to_lunabase = True
             self.broadcast_listener = None
             self._listening_for_broadcast = False
@@ -232,9 +235,11 @@ class LunabaseStream(object):
             self.autonomy_publish.publish(Bool(data=False))
         elif header == MsgHeaders.START_MANUAL_HOME:
             goal = HomeMotorManualGoal()
-            goal.motor = deserialize_i32(msg[1])
+            goal.motor = msg[1]
             self.manual_home_client.send_goal(goal)
             rospy.logwarn("manually homing! ;-)")
+        else:
+            raise Exception("Unrecognized header!: " + str(header))
 
 
 if __name__ == "__main__":
