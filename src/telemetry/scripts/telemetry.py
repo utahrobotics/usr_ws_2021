@@ -253,7 +253,7 @@ class LunabaseStream(object):
 
         elif header == MsgHeaders.START_MANUAL_HOME:
             goal = HomeMotorManualGoal()
-            goal.motor = msg[1]
+            goal.motor = msg[0]
             self.manual_home_client.send_goal(goal)
             rospy.logwarn("manually homing! ;-)")
 
@@ -270,7 +270,7 @@ if __name__ == "__main__":
         int(rospy.get_param("multicast_port"))
     )
     polling_delay = float(rospy.get_param("polling_delay"))
-    rate = rospy.Rate(15)       # 15 Hz
+    rate = rospy.Rate(25)       # 15 Hz
     while not rospy.is_shutdown():
         rate.sleep()
         stream.poll()
