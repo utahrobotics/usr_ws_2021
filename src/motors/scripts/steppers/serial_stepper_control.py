@@ -95,13 +95,13 @@ class SteeringSubscriber():
 	def shutdown(self):
 		self.stepper_controller.cancel()
 
-	def start_manual_home_cb(self, motorToHome):
+	def start_manual_home_cb(self, goal):
 		feedback = HomeMotorManualFeedback()
 		rate = rospy.Rate(10)
 
-		self.stepper_controller.StartManualHome(motorToHome)
+		self.stepper_controller.StartManualHome(goal.motor)
 
-		while(true):
+		while(True):
 			if self.a_server.is_preempt_requested():
 				self.a_server.set_preempted()
 				break
@@ -118,7 +118,7 @@ class StepperController():
 	def __init__(self, serial_number, steps):
 		self.serial = serial_number  # the serial number for responding to the device
 		self.steps = steps
-		# the micro controller serial instance
+		# teh micro controller serial instance
 		self._mc = serial.Serial(serial_number, 115200, timeout=.1)
 		self.buff = ""
 		time.sleep(1)  # give the connection a second to settle
@@ -163,8 +163,8 @@ class StepperController():
 			data = self._mc.read()
 			if data:
 				self.buff += data.decode()
-				if data == '\n' or data == '\0' or data=='':
-					rospy.logwarn(self.buff)
+				#if data == '\n' or data == '\0' or data=='':
+					#rospy.logwarn(self.buff)
 
 	def _encodeAlignCommand(self, fl, fr, bl, br):
 		# cmd = motor<<6 | dir<<5 | steps;
@@ -178,13 +178,13 @@ class StepperController():
 	def _encodeBlink(self, num_blinks):
 		return bytearray([Command.blink_led.value, num_blinks])
 
-	def _encodeHome(port):
+	def _encodeHome(self, port):
 		return bytearray([Command.home_port.value, port])
 
-	def encodeManualHome(port):
+	def _encodeManualHome(self, port):
 		return bytearray([Command.start_manual_home.value, port & 0xFF])
 
-	def encodeStopManualHome():
+	def _encodeStopManualHome(self):
 		return bytearray([Command.stop_manual_home.value])
 
 	def _encodeInit(self):

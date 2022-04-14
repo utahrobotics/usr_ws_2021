@@ -26,7 +26,7 @@ class MsgHeaders(IntEnum):
 
 
 JoyInput = NamedTuple('JoyInput', [
-    ('axes', Tuple[float, float, float, float, float, float]),
+    ('axes', Tuple[float, float, float, float, float, float, float, float]),
     ('buttons', Tuple[bool, bool, bool, bool, bool, bool, bool, bool, bool, bool])
 ])
 
@@ -101,7 +101,7 @@ def deserialize_bool_array(data, expected_size):
 # The following deserialize methods attempt to deserialize as much as they can from the byte stream
 # So they all return tuples
 deserialize_i32 = _i32_struct.unpack
-deserialize_f32 = _f32_struct.unpack
+_deserialize_f32 = _f32_struct.unpack
 deserialize_f64 = _f64_struct.unpack
 
 
@@ -122,31 +122,39 @@ class DeserializationStream(object):
         :param count: Number of ints to deserialize at once
         :return: A tuple of ints
         """
-        data_slice = self.data[0:4*count]
-        del self.data[0:4*count]
-        return deserialize_i32(data_slice)[0:count]
+        out = []
+        for i in range(count):
+            out.append(deserialize_i32(self.data[i * 4: (i + 1) * 4])[0])
+            del self.data[i * 4: (i + 1) * 4]
+	
+        return out
 
     def deserialize_f32(self, count=1):
         """
         :param count: Number of floats to deserialize at once
         :return: A tuple of floats
         """
-        data_slice = self.data[0:4*count]
-        del self.data[0:4*count]
-        return deserialize_f32(data_slice)[0:count]
+        out = []
+        for i in range(count):
+            out.append(_deserialize_f32(self.data[i * 4: (i + 1) * 4])[0])
+        del self.data[0: count * 4]
+        return out
 
     def deserialize_f64(self, count=1):
         """
         :param count: Number of doubles to deserialize at once
         :return: A tuple of doubles
         """
-        data_slice = self.data[0:8*count]
-        del self.data[0:8*count]
-        return deserialize_f32(data_slice)[0:count]
+        out = []
+        for i in range(count):
+            out.append(deserialize_f64(self.data[i * 8: (i + 1) * 8])[0])
+            del self.data[i * 8: (i + 1) * 8]
+	
+        return out
 
     def deserialize_joy(self):
         inp = JoyInput(
-            self.deserialize_f32(6),
+            self.deserialize_f32(8),
             tuple(deserialize_bool_array(self.data[0:2], 10))
         )
         del self.data[0:2]
@@ -168,8 +176,8 @@ class LunabaseStream(object):
         self.tcp_stream = sock.socket(sock.AF_INET, sock.SOCK_STREAM)
         self._connected_to_lunabase = False
 
-        self.arm_publish = rospy.Publisher("set_arm_angle", Float32, queue_size=10)
-        self.joy_publish = rospy.Publisher("telemetry_joy", Joy, queue_size=10)
+        self.arm_publish = rospy.Publisher("set_arm_angle", Float32, queue_size=1)
+        self.joy_publish = rospy.Publisher("telemetry_joy", Joy, queue_size=1)
         self.autonomy_publish = rospy.Publisher("set_autonomy", Bool, queue_size=10)
         self.manual_home_client = SimpleActionClient("home_motor_manual_as", HomeMotorManualAction)
 
@@ -190,30 +198,32 @@ class LunabaseStream(object):
     def poll(self):
         if self._listening_for_broadcast:
             try:
-                addr, port_str = str(self.broadcast_listener.recv(1024), "utf-8").split(":")
+                addr, port_str = str(self.broadcast_listener.recv(1024)).split(":")
             except sock.error:
                 return
             self.udp_stream.connect((addr, int(port_str)))
             self.tcp_stream.connect((addr, int(port_str) + 1))
             self.udp_stream.setblocking(False)
             self.tcp_stream.setblocking(False)
-            self.tcp_stream.sendall(bytes("lmao", "utf-8"))
+            self.tcp_stream.sendall(bytes("hello"))
+            self.udp_stream.sendall(bytes("hello"))
             self._connected_to_lunabase = True
             self.broadcast_listener = None
             self._listening_for_broadcast = False
             rospy.loginfo("Connected to" + addr + ":" + port_str)
 
         if not self._connected_to_lunabase: return
-        msg = bytearray(1024)
         try:
-            self.udp_stream.recv_into(msg, 1024)
-            self._handle_message(msg)
+            #msg = bytearray(4096)
+            msg, addr = self.udp_stream.recvfrom(1024)
+            self._handle_message(bytearray(msg))
         except sock.error:
             pass
 
         try:
-            self.tcp_stream.recv_into(msg, 1024)
-            self._handle_message(msg)
+            #msg = bytearray(4096)
+            msg, addr = self.tcp_stream.recvfrom(1024)
+            self._handle_message(bytearray(msg))
         except sock.error:
             pass
 
@@ -222,22 +232,29 @@ class LunabaseStream(object):
         del msg[0]
         if header == MsgHeaders.REQUEST_TERMINATE:
             rospy.logwarn("Remote base wants us to terminate")
+
         elif header == MsgHeaders.ARM_ANGLE:
             self.arm_publish.publish(deserialize_f32(msg)[0])
+
         elif header == MsgHeaders.JOY_INPUT:
             joy_inp = DeserializationStream(msg).deserialize_joy()
+            rospy.logwarn(joy_inp)
             joy_header = Header()
             joy_header.stamp = rospy.Time.now()
             self.joy_publish.publish(Joy(header=joy_header, axes=joy_inp.axes, buttons=joy_inp.buttons))
+
         elif header == MsgHeaders.MAKE_AUTONOMOUS:
             self.autonomy_publish.publish(Bool(data=True))
+
         elif header == MsgHeaders.MAKE_MANUAL:
             self.autonomy_publish.publish(Bool(data=False))
+
         elif header == MsgHeaders.START_MANUAL_HOME:
             goal = HomeMotorManualGoal()
             goal.motor = msg[1]
             self.manual_home_client.send_goal(goal)
             rospy.logwarn("manually homing! ;-)")
+
         else:
             raise Exception("Unrecognized header!: " + str(header))
 
@@ -252,5 +269,4 @@ if __name__ == "__main__":
     )
     polling_delay = float(rospy.get_param("polling_delay"))
     while not rospy.is_shutdown():
-        time.sleep(0.5)
         stream.poll()
