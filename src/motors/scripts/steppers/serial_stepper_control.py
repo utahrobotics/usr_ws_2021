@@ -69,7 +69,7 @@ class SteeringSubscriber():
 		# close the yaml configuration file
 		tmp_file.close()
 
-		self.a_server = actionlib.SimpleActionServer("home_motor_manual_as", WashTheDishesAction, execute_cb=self.start_manual_home_cb, auto_start=False)
+		self.a_server = actionlib.SimpleActionServer("home_motor_manual_as", HomeMotorManualAction, execute_cb=self.start_manual_home_cb, auto_start=False)
 		self.a_server.start()
 		rospy.on_shutdown(self.shutdown)
 
@@ -118,7 +118,7 @@ class StepperController():
 	def __init__(self, serial_number, steps):
 		self.serial = serial_number  # the serial number for responding to the device
 		self.steps = steps
-		# teh micro controller serial instance
+		# the micro controller serial instance
 		self._mc = serial.Serial(serial_number, 115200, timeout=.1)
 		self.buff = ""
 		time.sleep(1)  # give the connection a second to settle
