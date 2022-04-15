@@ -11,6 +11,7 @@ from std_msgs.msg import Float32, Header, Bool
 from sensor_msgs.msg import Joy
 from motors.msg import HomeMotorManualAction, HomeMotorManualGoal
 from actionlib import SimpleActionClient
+from rosgraph_msgs.msg import Log
 
 
 class MsgHeaders(IntEnum):
@@ -23,6 +24,8 @@ class MsgHeaders(IntEnum):
     ECHO = 6
     START_MANUAL_HOME = 7
     CONNECTED = 8
+    PING = 9
+    ROSOUT = 10
 
 
 JoyInput = NamedTuple('JoyInput', [
@@ -104,9 +107,9 @@ def deserialize_bool_array(data, expected_size):
 # IMPORTANT NOTE
 # The following deserialize methods attempt to deserialize as much as they can from the byte stream
 # So they all return tuples
-deserialize_i32 = _i32_struct.unpack
+_deserialize_i32 = _i32_struct.unpack
 _deserialize_f32 = _f32_struct.unpack
-deserialize_f64 = _f64_struct.unpack
+_deserialize_f64 = _f64_struct.unpack
 
 
 class DeserializationStream(object):
@@ -128,7 +131,7 @@ class DeserializationStream(object):
         """
         out = []
         for i in range(count):
-            out.append(deserialize_i32(self.data[i * 4: (i + 1) * 4])[0])
+            out.append(_deserialize_i32(self.data[i * 4: (i + 1) * 4])[0])
             del self.data[i * 4: (i + 1) * 4]
         return out
 
@@ -150,7 +153,7 @@ class DeserializationStream(object):
         """
         out = []
         for i in range(count):
-            out.append(deserialize_f64(self.data[i * 8: (i + 1) * 8])[0])
+            out.append(_deserialize_f64(self.data[i * 8: (i + 1) * 8])[0])
             del self.data[i * 8: (i + 1) * 8]
         return out
 
@@ -178,6 +181,8 @@ class LunabaseStream(object):
         self._listening_for_broadcast = False
         self.termination_requested = False
 
+        self.rosout_sub = rospy.Subscriber("rosout", Log, self.rosout_callback, queue_size=10)
+        
         self.arm_publish = rospy.Publisher("set_arm_angle", Float32, queue_size=1)
         self.joy_publish = rospy.Publisher("telemetry_joy", Joy, queue_size=1)
         self.autonomy_publish = rospy.Publisher("set_autonomy", Bool, queue_size=10)
@@ -210,9 +215,13 @@ class LunabaseStream(object):
         self.tcp_stream.connect((addr, port + 1))
         self.udp_stream.setblocking(False)
         self.tcp_stream.setblocking(False)
-        self.udp_stream.sendall(bytes("hello"))
+        self.udp_stream.sendall(bytearray([MsgHeaders.CONNECTED]))
         self._connected_to_lunabase = True
         rospy.logwarn("Successfully connected to lunabase")
+       
+    def rosout_callback(self, msg):
+        if not self._connected_to_lunabase: return
+        self.tcp_stream.sendall(bytearray([MsgHeaders.ROSOUT, msg.level]) + bytes(msg.msg))
 
     def poll(self):
         if self._listening_for_broadcast:
@@ -232,6 +241,7 @@ class LunabaseStream(object):
             pass
 
         try:
+            self.tcp_stream.fileno()        # method that pings the remote server to check if it is still up
             msg, _ = self.tcp_stream.recvfrom(1024)
             self._handle_message(bytearray(msg))
         except sock.error:
@@ -239,6 +249,7 @@ class LunabaseStream(object):
 
     def _handle_message(self, msg):
         if len(msg) == 0:
+            # Last test of this was unsuccesful
             rospy.logwarn("Remote base has closed connection to us, reconnecting...")
             self._connected_to_lunabase = False
             self.close()
@@ -258,16 +269,19 @@ class LunabaseStream(object):
 
         elif header == MsgHeaders.JOY_INPUT:
             joy_inp = DeserializationStream(msg).deserialize_joy()
-            rospy.logwarn(joy_inp)
             joy_header = Header()
             joy_header.stamp = rospy.Time.now()
             self.joy_publish.publish(Joy(header=joy_header, axes=joy_inp.axes, buttons=joy_inp.buttons))
 
         elif header == MsgHeaders.MAKE_AUTONOMOUS:
             self.autonomy_publish.publish(Bool(data=True))
+            rospy.logwarn("Received MAKE_AUTONOMOUS")
+            self.tcp_stream.sendall(bytearray([MsgHeaders.ECHO, MsgHeaders.MAKE_AUTONOMOUS]))
 
         elif header == MsgHeaders.MAKE_MANUAL:
             self.autonomy_publish.publish(Bool(data=False))
+            rospy.logwarn("Received MAKE_MANUAL")
+            self.tcp_stream.sendall(bytearray([MsgHeaders.ECHO, MsgHeaders.MAKE_MANUAL]))
 
         elif header == MsgHeaders.START_MANUAL_HOME:
             goal = HomeMotorManualGoal()
