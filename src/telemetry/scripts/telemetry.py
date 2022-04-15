@@ -169,19 +169,26 @@ class LunabaseStream(object):
     """
 
     def __init__(self):
-        self.broadcast_listener = sock.socket(sock.AF_INET, sock.SOCK_DGRAM, sock.IPPROTO_UDP)
-        self.broadcast_listener.setsockopt(sock.SOL_SOCKET, sock.SO_REUSEADDR, 1)
-        self.broadcast_listener.setblocking(False)
-        self._listening_for_broadcast = False
+        self.broadcast_listener = None
+        self.udp_stream = None
+        self.tcp_stream = None
+        self.setup_sockets()
 
-        self.udp_stream = sock.socket(sock.AF_INET, sock.SOCK_DGRAM)
-        self.tcp_stream = sock.socket(sock.AF_INET, sock.SOCK_STREAM)
         self._connected_to_lunabase = False
+        self._listening_for_broadcast = False
 
         self.arm_publish = rospy.Publisher("set_arm_angle", Float32, queue_size=1)
         self.joy_publish = rospy.Publisher("telemetry_joy", Joy, queue_size=1)
         self.autonomy_publish = rospy.Publisher("set_autonomy", Bool, queue_size=10)
         self.manual_home_client = SimpleActionClient("home_motor_manual_as", HomeMotorManualAction)
+
+    def setup_sockets(self):
+        self.broadcast_listener = sock.socket(sock.AF_INET, sock.SOCK_DGRAM, sock.IPPROTO_UDP)
+        self.broadcast_listener.setsockopt(sock.SOL_SOCKET, sock.SO_REUSEADDR, 1)
+        self.broadcast_listener.setblocking(False)
+
+        self.udp_stream = sock.socket(sock.AF_INET, sock.SOCK_DGRAM)
+        self.tcp_stream = sock.socket(sock.AF_INET, sock.SOCK_STREAM)
 
     def close(self):
         self.udp_stream.close()
@@ -217,19 +224,27 @@ class LunabaseStream(object):
         if not self._connected_to_lunabase: return
         try:
             #msg = bytearray(4096)
-            msg, addr = self.udp_stream.recvfrom(1024)
+            msg, _ = self.udp_stream.recvfrom(1024)
             self._handle_message(bytearray(msg))
         except sock.error:
             pass
 
         try:
             #msg = bytearray(4096)
-            msg, addr = self.tcp_stream.recvfrom(1024)
+            msg, _ = self.tcp_stream.recvfrom(1024)
             self._handle_message(bytearray(msg))
         except sock.error:
             pass
 
     def _handle_message(self, msg):
+        if len(msg) == 0:
+            rospy.logwarn("Remote base has closed connection to us, reconnecting...")
+            self._connected_to_lunabase = False
+            self.close()
+            self.setup_sockets()
+            self._listening_for_broadcast = True
+            return
+
         header = msg[0]
         del msg[0]
         if header == MsgHeaders.REQUEST_TERMINATE:
