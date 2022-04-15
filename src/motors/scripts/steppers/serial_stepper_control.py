@@ -71,6 +71,7 @@ class SteeringSubscriber():
 
 		self.a_server = actionlib.SimpleActionServer("home_motor_manual_as", HomeMotorManualAction, execute_cb=self.start_manual_home_cb, auto_start=False)
 		self.a_server.start()
+		self.stop_requested = False
 		rospy.on_shutdown(self.shutdown)
 
 	def listener_callback(self, msg):
@@ -78,7 +79,7 @@ class SteeringSubscriber():
 		# TODO: incorperate the state machince variables to decide if motors should be running or not
 
 		# if motors are ready, set the new speed to each controller
-		if self.stepper_controller != None:
+		if self.stepper_controller is not None:
 			self.stepper_controller.alignMotors(
 							int(msg.angles[0]),
 							int(msg.angles[1]),
@@ -87,27 +88,34 @@ class SteeringSubscriber():
 							)
 	def joyCallback(self, joy):
 		if joy.axes[1]: #stop manual home if y is pressed
-			self.stepper_controller.StopManualHome()
-			result = HomeMotorManualResult()
-			result.success = True;
-			self.a_server.set_succeeded(result)
+			self.stop_requested = False
+			#self.stepper_controller.StopManualHome()
+			#result = HomeMotorManualResult()
+			#result.success = True;
+			#self.a_server.set_succeeded(result)
 
 	def shutdown(self):
 		self.stepper_controller.cancel()
 
 	def start_manual_home_cb(self, goal):
+		self.stop_requested = False
 		feedback = HomeMotorManualFeedback()
 		rate = rospy.Rate(10)
 
 		self.stepper_controller.StartManualHome(goal.motor)
 
-		while(True):
-			if self.a_server.is_preempt_requested():
-				self.a_server.set_preempted()
-				break
+		while not self.stop_requested:
+			#if self.a_server.is_preempt_requested():
+				#self.a_server.set_preempted()
+				#break
 			feedback.isRunning = True
 			self.a_server.publish_feedback(feedback)
 			rate.sleep()
+		
+		self.stepper_controller.StopManualHome()
+		result = HomeMotorManualResult()
+		result.success = True;
+		self.a_server.set_succeeded(result)
 
 
 class StepperController():
@@ -160,11 +168,14 @@ class StepperController():
 
 	def readSerial(self):
 		while True:
-			data = self._mc.read()
-			if data:
-				self.buff += data.decode()
-				#if data == '\n' or data == '\0' or data=='':
-					#rospy.logwarn(self.buff)
+			try:
+				data = self._mc.read()
+				if data:
+					self.buff += data.decode()
+					#if data == '\n' or data == '\0' or data=='':
+						#rospy.logwarn(self.buff)
+			except serial.SerialException:
+				rospy.logwarn("Tried to read from uninitialized micro-controller")
 
 	def _encodeAlignCommand(self, fl, fr, bl, br):
 		# cmd = motor<<6 | dir<<5 | steps;
