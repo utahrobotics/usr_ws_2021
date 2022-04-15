@@ -176,6 +176,7 @@ class LunabaseStream(object):
 
         self._connected_to_lunabase = False
         self._listening_for_broadcast = False
+        self.termination_requested = False
 
         self.arm_publish = rospy.Publisher("set_arm_angle", Float32, queue_size=1)
         self.joy_publish = rospy.Publisher("telemetry_joy", Joy, queue_size=1)
@@ -248,7 +249,9 @@ class LunabaseStream(object):
         header = msg[0]
         del msg[0]
         if header == MsgHeaders.REQUEST_TERMINATE:
+            # TODO Add method to stop the bot
             rospy.logwarn("Remote base wants us to terminate")
+            self.termination_requested = True
 
         elif header == MsgHeaders.ARM_ANGLE:
             self.arm_publish.publish(deserialize_f32(msg)[0])
@@ -285,7 +288,8 @@ if __name__ == "__main__":
         int(rospy.get_param("multicast_port"))
     )
     polling_delay = float(rospy.get_param("polling_delay"))
-    rate = rospy.Rate(25)       # 15 Hz
-    while not rospy.is_shutdown():
+    rate = rospy.Rate(25)       # 25 Hz
+    while not rospy.is_shutdown() and not stream.termination_requested:
         rate.sleep()
         stream.poll()
+    rospy.logwarn("Polling loop has ended")
