@@ -3,7 +3,7 @@
 import socket as sock
 from struct import Struct, pack
 import time
-from typing import NamedTuple, Tuple        # NOTE: install typing with pip
+from typing import NamedTuple, Tuple, List  # NOTE: install typing with pip
 
 import rospy
 from enum import IntEnum  # NOTE! Install enum34 with pip
@@ -26,8 +26,8 @@ class MsgHeaders(IntEnum):
 
 
 JoyInput = NamedTuple('JoyInput', [
-    ('axes', Tuple[float, float, float, float, float, float, float, float]),
-    ('buttons', Tuple[bool, bool, bool, bool, bool, bool, bool, bool, bool, bool])
+    ('axes', List[float]),
+    ('buttons', List[bool])
 ])
 
 
@@ -85,13 +85,17 @@ def serialize_bool_array(bools):
 def deserialize_bool_array(data, expected_size):
     bools = []
     for n in data:
+        byte = []
         for i in range(8):
-            factor = pow(2, i)
+            factor = pow(2, 7 - i)
             if n >= factor:
                 n -= factor
-                bools.append(True)
+                byte.append(True)
             else:
-                bools.append(False)
+                byte.append(False)
+        byte.reverse()
+        for b in byte:
+            bools.append(b)
             expected_size -= 1
             if expected_size == 0:
                 return bools
@@ -126,7 +130,6 @@ class DeserializationStream(object):
         for i in range(count):
             out.append(deserialize_i32(self.data[i * 4: (i + 1) * 4])[0])
             del self.data[i * 4: (i + 1) * 4]
-	
         return out
 
     def deserialize_f32(self, count=1):
@@ -149,13 +152,12 @@ class DeserializationStream(object):
         for i in range(count):
             out.append(deserialize_f64(self.data[i * 8: (i + 1) * 8])[0])
             del self.data[i * 8: (i + 1) * 8]
-	
         return out
 
     def deserialize_joy(self):
         inp = JoyInput(
             self.deserialize_f32(8),
-            tuple(deserialize_bool_array(self.data[0:2], 10))
+            deserialize_bool_array(self.data[0:2], 10)
         )
         del self.data[0:2]
         return inp
@@ -251,7 +253,7 @@ class LunabaseStream(object):
 
         elif header == MsgHeaders.START_MANUAL_HOME:
             goal = HomeMotorManualGoal()
-            goal.motor = msg[1]
+            goal.motor = msg[0]
             self.manual_home_client.send_goal(goal)
             rospy.logwarn("manually homing! ;-)")
 
@@ -268,5 +270,7 @@ if __name__ == "__main__":
         int(rospy.get_param("multicast_port"))
     )
     polling_delay = float(rospy.get_param("polling_delay"))
+    rate = rospy.Rate(25)       # 15 Hz
     while not rospy.is_shutdown():
+        rate.sleep()
         stream.poll()
