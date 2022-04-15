@@ -205,33 +205,33 @@ class LunabaseStream(object):
         self.broadcast_listener.setsockopt(sock.IPPROTO_IP, sock.IP_ADD_MEMBERSHIP, mreq)
         self._listening_for_broadcast = True
 
+    def direct_connect(self, addr="127.0.0.1", port=42424):
+        self.udp_stream.connect((addr, port))
+        self.tcp_stream.connect((addr, port + 1))
+        self.udp_stream.setblocking(False)
+        self.tcp_stream.setblocking(False)
+        self.udp_stream.sendall(bytes("hello"))
+        self._connected_to_lunabase = True
+        rospy.logwarn("Successfully connected to lunabase")
+
     def poll(self):
         if self._listening_for_broadcast:
             try:
                 addr, port_str = str(self.broadcast_listener.recv(1024)).split(":")
             except sock.error:
                 return
-            self.udp_stream.connect((addr, int(port_str)))
-            self.tcp_stream.connect((addr, int(port_str) + 1))
-            self.udp_stream.setblocking(False)
-            self.tcp_stream.setblocking(False)
-            self.tcp_stream.sendall(bytes("hello"))
-            self.udp_stream.sendall(bytes("hello"))
-            self._connected_to_lunabase = True
+            self.direct_connect(addr, int(port_str))
             self.broadcast_listener = None
             self._listening_for_broadcast = False
-            rospy.loginfo("Connected to" + addr + ":" + port_str)
 
         if not self._connected_to_lunabase: return
         try:
-            #msg = bytearray(4096)
             msg, _ = self.udp_stream.recvfrom(1024)
             self._handle_message(bytearray(msg))
         except sock.error:
             pass
 
         try:
-            #msg = bytearray(4096)
             msg, _ = self.tcp_stream.recvfrom(1024)
             self._handle_message(bytearray(msg))
         except sock.error:
@@ -283,12 +283,28 @@ if __name__ == "__main__":
     rospy.init_node('telemetry')
     stream = LunabaseStream()
     rospy.on_shutdown(stream.close)
-    stream.listen_for_broadcast(
-        rospy.get_param("multicast_address"),
-        int(rospy.get_param("multicast_port"))
-    )
-    polling_delay = float(rospy.get_param("polling_delay"))
-    rate = rospy.Rate(25)       # 25 Hz
+
+    if rospy.has_param("remote_ip"):
+        if not rospy.has_param("remote_port"):
+            raise KeyError("There is a remote_ip in the launch file, but not a remote_port. Please add it")
+
+        addr = rospy.get_param("remote_ip")
+        port = rospy.get_param("remote_port")
+        rospy.logwarn("Using direct connection to lunabase at " + addr + ":" + str(port))
+        stream.direct_connect(
+            addr,
+            int(port)
+        )
+
+    else:
+        rospy.logwarn("Using broadcasting to discover lunabase")
+        stream.listen_for_broadcast(
+            rospy.get_param("multicast_address"),
+            int(rospy.get_param("multicast_port"))
+        )
+
+    polling_rate = rospy.get_param("polling_rate")
+    rate = rospy.Rate(polling_rate)
     while not rospy.is_shutdown() and not stream.termination_requested:
         rate.sleep()
         stream.poll()
