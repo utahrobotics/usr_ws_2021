@@ -92,8 +92,7 @@ class LocCtlr:
                 self.translationControl(joy.axes[1],joy.axes[2])
             self.previousStartButtonState = self.currentStartButtonState
 
-    def autonomyCallback(twist):
-        global locController
+    def autonomyCallback(self, twist):
         if rospy.get_param("/isAutonomous"):
             print("autonomy twist recieved")
 
@@ -103,7 +102,7 @@ class LocCtlr:
             left_speed = linear_x + angular_z
             right_speed = linear_x - angular_z
 
-            locController.tankSteer(left_speed, right_speed)
+            self.tankSteer(left_speed, right_speed)
 
 if __name__ == "__main__":
     pub = rospy.Publisher('locomotion', SteerAndThrottle, queue_size=1)
