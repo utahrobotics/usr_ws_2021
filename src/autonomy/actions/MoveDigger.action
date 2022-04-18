@@ -1,0 +1,5 @@
+bool digging        # if true, will spin digger to dig, otherwise will spin to unload
+---
+uint8 error_code
+---
+float32 percent_complete

@@ -1,0 +1,13 @@
+digraph G {
+"base_link" -> "base_cam1"[label="Broadcaster: /tf_broadcaster\nAverage rate: 100.202 Hz\nMost recent transform: 1646697074.729 ( 0.005 sec old)\nBuffer length: 4.930 sec\n"];
+"odom" -> "base_link"[label="Broadcaster: /imu_faker\nAverage rate: 200.202 Hz\nMost recent transform: 1646697074.734 ( 0.001 sec old)\nBuffer length: 4.930 sec\n"];
+"base_link" -> "base_cam2"[label="Broadcaster: /tf_broadcaster\nAverage rate: 100.203 Hz\nMost recent transform: 1646697074.729 ( 0.005 sec old)\nBuffer length: 4.930 sec\n"];
+edge [style=invis];
+ subgraph cluster_legend { style=bold; color=black; label ="view_frames Result";
+"Recorded at time: 1646697074.735"[ shape=plaintext ] ;
+ }->"odom";
+edge [style=invis];
+ subgraph cluster_legend { style=bold; color=black; label ="view_frames Result";
+"Recorded at time: 1646697074.735"[ shape=plaintext ] ;
+ }->"map";
+}
