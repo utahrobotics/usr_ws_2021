@@ -33,12 +33,10 @@ class DrivingSubscriber:
 
     def drum_drive_callback(self, msg):
     	drum_vel = msg.data
-    	rospy.logwarn(drum_vel)
     	self.drum_motor.set_duty_cycle(drum_vel)
     	
     def arm_callback(self, msg):
     	arm_vel = msg.data
-    	#rospy.logwarn(arm_vel)
     	self.arm_motor.set_duty_cycle(arm_vel)
 
 #    def getAngle():
@@ -46,7 +44,7 @@ class DrivingSubscriber:
 
 
 def main(args=None):
-	rospy.init_node('minimal_subscriber')
+	rospy.init_node('brushed_motors')
 	sub_node = DrivingSubscriber()
 	rospy.spin()
 	# Destroy the node explicitly
