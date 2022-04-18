@@ -1,0 +1,3 @@
+KERNEL=="ttyACM0", ATTRS{idVendor}=="16c0", SYMLINK+="stepper_teensy"
+KERNEL=="ttyACM1", KERNELS=="1-2.2.2", SYMLINK+="FSESC_arm"
+KERNEL=="ttyACM2", KERNELS=="1-2.2.1", SYMLINK+="FSESC_drum"

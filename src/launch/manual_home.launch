@@ -1,8 +1,11 @@
 <launch>
 	<param name="controller_source" value="remote" />
 
+	<param name="isAutonomous" value="false" />
 	<param name="multicast_address" value="224.1.1.1" />
 	<param name="multicast_port" value="42420" />
 	<param name="polling_rate" value="25" />
 	<node pkg="telemetry" type="telemetry.py" name="telemetry" />
+	<node pkg="locomotion" type="steering.py" name="steering" />
+	<node pkg="motors" type="serial_stepper_control.py" name="serial_stepper_control" />
 </launch>
