@@ -1,0 +1,33 @@
+front_left:
+  pins:
+    speed: 32
+    direction: 19
+    ready: 21
+    enable: 7
+  inverted: False
+
+front_right:
+  pins:
+    speed: 33
+    direction: 22
+    ready: 24
+    enable: 7
+  inverted: True
+
+back_left:
+  pins:
+    speed: 32
+    direction: 19
+    ready: 29
+    enable: 7
+  inverted: False
+
+back_right:
+  pins:
+    speed: 33
+    direction: 22
+    ready: 37
+    enable: 7
+  inverted: True
+
+pwm_frequency: 10000
