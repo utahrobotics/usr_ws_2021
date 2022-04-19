@@ -10,6 +10,6 @@
 	</node>
 	<node pkg="telemetry" type="telemetry.py" name="telemetry" />
 	<node pkg="locomotion" type="cameras.py" name="digging" />
-	<!-- <node pkg="motors" type="digger_motor_controller.py" name="brushed" output="screen"/> -->
+	<node pkg="motors" type="servos.py" name="servos" output="screen"/>
 </launch>
 

@@ -50,7 +50,7 @@ class LocCtlr:
         angle = (right_joystickX * 90)
         angles = [90 - angle, 90 - angle, 90 - angle, 90 - angle]
 
-	    vel = left_joystickY
+        vel = left_joystickY
         velocities = [vel, vel, vel, vel]
         H = Header()
         H.stamp = rospy.Time.now()
@@ -65,7 +65,7 @@ class LocCtlr:
         angle = (right_joystickX * 90)
         angles = [90 - angle, 90 + angle, 90 - angle, 90 + angle]
 
-	vel = left_joystickY
+        vel = left_joystickY
         velocities = [vel, vel, vel, vel]
         H = Header()
         H.stamp = rospy.Time.now()
@@ -82,7 +82,7 @@ class LocCtlr:
             self.currentStartButtonState = joy.buttons[9]
             if self.currentStartButtonState and not self.previousStartButtonState :
                 self.steeringType=(self.steeringType+1)%3
-		        rospy.logwarn("switched to drive mode " + str(self.steeringType))
+                rospy.logwarn("switched to drive mode " + str(self.steeringType))
             if self.steeringType==0:
                 self.tankSteer(joy.axes[1],joy.axes[5])
             if self.steeringType==1:
