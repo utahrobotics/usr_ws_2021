@@ -3,18 +3,19 @@ from abstract_server import AbstractActionServer
 from autonomy.msg import InitializeAction
 from motors.msg import InitMotors
 from autonomy.msg import MoveArmAction, MoveArmGoal
+from actionlib import SimpleActionClient
 
 
 class InitializeServer(AbstractActionServer):
     def __init__(self):
         AbstractActionServer.__init__(self, 'initialize', InitializeAction)
         self.move_arm = SimpleActionClient('move_arm', MoveArmAction)
-
-	    self.init_motors_pub = rospy.Publisher(
-		    'init_motors',
-		    InitMotors,
+        self.move_arm.wait_for_server(rospy.Duration(3))
+        self.init_motors_pub = rospy.Publisher(
+            'init_motors',
+            InitMotors,
             queue_size=1
-	    )
+        )
 
     def execute(self, _goal):
         """
@@ -29,4 +30,4 @@ class InitializeServer(AbstractActionServer):
 
         rospy.sleep(20)
         
-        rospy.loginfo("Initialized")
+        rospy.logwarn("Initialized")

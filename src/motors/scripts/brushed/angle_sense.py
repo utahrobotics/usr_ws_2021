@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 import smbus
 import time
-import matplotlib.pyplot as plt
-from matplotlib.animation import FuncAnimation
+#import matplotlib.pyplot as plt
+#from matplotlib.animation import FuncAnimation
 import numpy as np
 import rospy
 import collections

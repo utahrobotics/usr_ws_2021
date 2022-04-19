@@ -15,4 +15,5 @@ if __name__ == "__main__":
     move_arm.start()
     move_digger.start()
     rospy.logwarn("Action servers started")
+    init.execute(None)
     rospy.spin()
