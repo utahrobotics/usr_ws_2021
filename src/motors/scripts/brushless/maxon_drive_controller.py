@@ -74,7 +74,7 @@ class MaxonController():
         # setup the speed pin, this is controlled using PWM signals
         self.speed_pin = speed_pin
         GPIO.setup(channels=speed_pin, direction=GPIO.OUT, initial=GPIO.LOW)
-	pwm_frequency = motor_config["pwm_frequency"]
+	    pwm_frequency = motor_config["pwm_frequency"]
         self.pwm_sig = GPIO.PWM(self.speed_pin, pwm_frequency)
         self.pwm_sig.start(0)
         

@@ -4,6 +4,7 @@ from autonomy.msg import InitializeAction
 from motors.msg import InitMotors
 from autonomy.msg import MoveArmAction, MoveArmGoal
 from actionlib import SimpleActionClient
+from locomotion.msg import BypassVelocity
 
 
 class InitializeServer(AbstractActionServer):
@@ -14,6 +15,11 @@ class InitializeServer(AbstractActionServer):
         self.init_motors_pub = rospy.Publisher(
             'init_motors',
             InitMotors,
+            queue_size=1
+        )
+        self.bypass_vel_pub = rospy.Publisher(
+            'bypass_vel',
+            BypassVelocity,
             queue_size=1
         )
 
@@ -27,7 +33,13 @@ class InitializeServer(AbstractActionServer):
         goal = MoveArmGoal()
         goal.extend = True
         self.move_arm.send_goal(goal)
+        
+        self.bypass_vel_pub.publish(BypassVelocity(-1, -1))
 
-        rospy.sleep(20)
+        rospy.sleep(4)
+        
+        self.bypass_vel_pub.publish(BypassVelocity(0, 0))
+        
+        rospy.sleep(16)
         
         rospy.logwarn("Initialized")
