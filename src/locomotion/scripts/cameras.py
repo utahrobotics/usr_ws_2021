@@ -32,14 +32,14 @@ class CamCtlr:
 
     def CamControl(self,_dPadX, _dPadY):
         if _dPadX<0 and self.CamPulse > servo_min:
-		self.CamPulse -= 2
+		self.CamPulse -= 3
 	elif _dPadX>0 and self.CamPulse < servo_max:
-		self.CamPulse += 2
+		self.CamPulse += 3
 	
 	if _dPadY<0 and self.ArmPulse > servo_min:
-		self.ArmPulse -= 2
+		self.ArmPulse -= 3
 	elif _dPadY>0  and self.ArmPulse < servo_max:
-		self.ArmPulse += 2
+		self.ArmPulse += 3
 
 	self.camAnglePub.publish(Int32(self.CamPulse))
 	self.sensorArmAnglePub.publish(Int32(self.ArmPulse))
