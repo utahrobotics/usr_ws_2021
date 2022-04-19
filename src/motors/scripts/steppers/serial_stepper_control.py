@@ -17,7 +17,7 @@ import rospkg
 import threading
 
 import actionlib
-from motors.msg import HomeMotorManualAction, HomeMotorManualFeedback, HomeMotorManualResult
+from motors.msg import HomeMotorManualAction, HomeMotorManualFeedback, HomeMotorManualResult, InitMotors
 
 from locomotion.msg import SteerAndThrottle
 from sensor_msgs.msg import Joy
@@ -55,6 +55,11 @@ class SteeringSubscriber():
 		self.stepper_controller = StepperController(stepper_config['serial'], stepper_config['steps'])
 
 		#self.stepper_controller.initMotors()
+
+		rospy.Subscriber(
+			'init_motors',
+			InitMotors,
+			self.stepper_controller.initMotors, queue_size=1)
 
 		rospy.Subscriber(
 			'locomotion',

@@ -5,6 +5,9 @@ from std_msgs.msg import Float32
 from math import pi
 
 
+ARM_EXTENSION_ANGLE = pi / 6
+
+
 class MoveArmServer(AbstractActionServer):
     def __init__(self):
         AbstractActionServer.__init__(self, 'move_arm', MoveArmAction)
@@ -19,15 +22,15 @@ class MoveArmServer(AbstractActionServer):
         r = rospy.Rate(20)
         if goal.extend:
             self.arm_vel_pub.publish(Float32(1))        # 1 radian per second?
-            while self.arm_angle < pi / 6:
+            while self.arm_angle < ARM_EXTENSION_ANGLE:
                 r.sleep()
-		        self.publish_feedback(self.arm_angle / (pi / 6))
+		        self.publish_feedback(self.arm_angle / ARM_EXTENSION_ANGLE)
             self.arm_vel_pub.publish(Float32(0))
         else:
             self.arm_vel_pub.publish(Float32(-1))        # 1 radian per second?
             while self.arm_angle > 0:
                 r.sleep()
-		        self.publish_feedback(1 - self.arm_angle / (pi / 6))
+		        self.publish_feedback(1 - self.arm_angle / ARM_EXTENSION_ANGLE)
             self.arm_vel_pub.publish(Float32(0))
 
         if goal.extend:
