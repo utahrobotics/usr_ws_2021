@@ -21,6 +21,9 @@ class AbstractActionServer(object):
         self.end_callback = None
         self.server = actionlib.SimpleActionServer(action_name, action_spec, self._execute, False)
 
+    def publish_feedback(self, feedback):
+        self.server.publish_feedback(feedback)
+
     def start(self):
         self.server.start()
 
