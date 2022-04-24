@@ -292,19 +292,18 @@ class LunabaseStream(object):
 		else:
 			raise Exception("Unrecognized header!: " + str(header))
 
-def local_callback(data):
-	global pub
-	pub.publish(data)
-
 
 if __name__ == "__main__":
 	rospy.init_node('telemetry')
 	if rospy.has_param("/controller_source"):
 		if rospy.get_param("/controller_source") == "local":
-			print("local control, using joy node")
+			rospy.logwarn("local control, using joy node")
 			pub = rospy.Publisher('telemetry_joy', Joy,  queue_size=10)
-			rospy.Subscriber("joy", Joy, local_callback)
+			rospy.Subscriber("joy", Joy, pub.publish)
 			rospy.spin()
+			raise SystemExit
+		else:
+			raise ValueError("Unexpected value for /controller_source: " + rospy.get_param("/controller_source"))
 	
 	stream = LunabaseStream()
 	rospy.on_shutdown(stream.close)
