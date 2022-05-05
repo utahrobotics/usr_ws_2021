@@ -3,7 +3,7 @@ from enum import Enum
 import struct
 import threading
 
-COM = "/dev/stepper_teensy"
+COM = "/dev/ttyACM0"
 arduino = serial.Serial(COM, 115200, timeout=.1)
 
 int_to_four_bytes = struct.Struct('<I').pack

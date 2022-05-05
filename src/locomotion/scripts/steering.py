@@ -84,6 +84,7 @@ class LocCtlr:
                 self.steeringType=(self.steeringType+1)%3
                 rospy.logwarn("switched to drive mode " + str(self.steeringType))
             if self.steeringType==0:
+            # error source
                 self.tankSteer(joy.axes[1],joy.axes[5])
             if self.steeringType==1:
                 self.radialSteer(joy.axes[1],joy.axes[2])
