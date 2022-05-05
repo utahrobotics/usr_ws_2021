@@ -69,7 +69,7 @@ class SteeringSubscriber():
 		rospy.Subscriber("telemetry_joy", Joy, self.joyCallback, queue_size=10)
 
 		# intilialize motors
-		
+		self.last_locomotion = None
 
 		# close the yaml configuration file
 		tmp_file.close()
@@ -82,6 +82,13 @@ class SteeringSubscriber():
 	def listener_callback(self, msg):
 		# first check that the controllers are ready
 		# TODO: incorperate the state machince variables to decide if motors should be running or not
+		
+		# check if we are getting similar angles
+		if self.last_locomotion is not None:
+			for (last_angle, new_angle) in zip(self.last_locomotion.angles, msg.angles):
+				if abs(last_angle - new_angle) > 0.01: break
+			else:
+				return
 
 		# if motors are ready, set the new speed to each controller
 		if self.stepper_controller is not None:
