@@ -9,6 +9,7 @@ import rospy
 from enum import IntEnum  # NOTE! Install enum34 with pip
 from std_msgs.msg import Float32, Header, Bool
 from sensor_msgs.msg import Joy
+from nav_msgs.msg import Odometry
 from motors.msg import HomeMotorManualAction, HomeMotorManualGoal
 from actionlib import SimpleActionClient
 from rosgraph_msgs.msg import Log
@@ -54,6 +55,24 @@ _f64_struct = Struct("<d")
 serialize_i32 = _i32_struct.pack
 serialize_f32 = _f32_struct.pack
 serialize_f64 = _f64_struct.pack
+
+
+def serialize_odometry(odom):
+	return serialize_f32([
+		odom.pose.orientation.x,
+		odom.pose.orientation.y,
+		odom.pose.orientation.z,
+		odom.pose.orientation.w,
+		odom.pose.position.x,
+		odom.pose.position.y,
+		odom.pose.position.z,
+		odom.twist.linear.x,
+		odom.twist.linear.y,
+		odom.twist.linear.z,
+		odom.twist.angular.x,
+		odom.twist.angular.y,
+		odom.twist.angular.z,
+	])
 
 
 def serialize_bool_array(bools):
@@ -182,7 +201,8 @@ class LunabaseStream(object):
 		self.termination_requested = False
 
 		self.rosout_sub = rospy.Subscriber("rosout", Log, self.rosout_callback, queue_size=10)
-		
+		self.odom_sub = rospy.Subscriber("nav_msgs/Odometry", Odometry, self.odom_callback, queue_size=10)
+
 		self.arm_publish = rospy.Publisher("set_arm_angle", Float32, queue_size=1)
 		self.joy_publish = rospy.Publisher("telemetry_joy", Joy, queue_size=1)
 		self.autonomy_publish = rospy.Publisher("set_autonomy", Bool, queue_size=10)
@@ -218,10 +238,14 @@ class LunabaseStream(object):
 		self.udp_stream.sendall(bytearray([MsgHeaders.CONNECTED]))
 		self._connected_to_lunabase = True
 		rospy.logwarn("Successfully connected to lunabase")
-	   
+
 	def rosout_callback(self, msg):
 		if not self._connected_to_lunabase: return
 		self.tcp_stream.sendall(bytearray([MsgHeaders.ROSOUT, msg.level]) + bytes(msg.msg))
+
+	def odom_callback(self, odom):
+		if not self._connected_to_lunabase: return
+		self.udp_stream.sendall(bytearray([MsgHeaders.ODOMETRY]) + serialize_odometry(odom))
 
 	def poll(self):
 		if self._listening_for_broadcast:
@@ -292,19 +316,21 @@ class LunabaseStream(object):
 		else:
 			raise Exception("Unrecognized header!: " + str(header))
 
-def local_callback(data):
-	global pub
-	pub.publish(data)
-
 
 if __name__ == "__main__":
 	rospy.init_node('telemetry')
 	if rospy.has_param("/controller_source"):
-		if rospy.get_param("/controller_source") == "local":
-			print("local control, using joy node")
+		param = rospy.get_param("/controller_source")
+		if param == "local":
+			rospy.logwarn("local control, using joy node")
 			pub = rospy.Publisher('telemetry_joy', Joy,  queue_size=10)
-			rospy.Subscriber("joy", Joy, local_callback)
+			rospy.Subscriber("joy", Joy, pub.publish)
 			rospy.spin()
+			raise SystemExit
+		elif param == "remote":
+			pass
+		else:
+			raise ValueError("Unexpected value for /controller_source: " + rospy.get_param("/controller_source"))
 	
 	stream = LunabaseStream()
 	rospy.on_shutdown(stream.close)
