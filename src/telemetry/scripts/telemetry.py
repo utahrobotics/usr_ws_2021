@@ -320,12 +320,15 @@ class LunabaseStream(object):
 if __name__ == "__main__":
 	rospy.init_node('telemetry')
 	if rospy.has_param("/controller_source"):
-		if rospy.get_param("/controller_source") == "local":
+		param = rospy.get_param("/controller_source")
+		if param == "local":
 			rospy.logwarn("local control, using joy node")
 			pub = rospy.Publisher('telemetry_joy', Joy,  queue_size=10)
 			rospy.Subscriber("joy", Joy, pub.publish)
 			rospy.spin()
 			raise SystemExit
+		elif param == "remote":
+			pass
 		else:
 			raise ValueError("Unexpected value for /controller_source: " + rospy.get_param("/controller_source"))
 	
