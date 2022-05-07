@@ -3,6 +3,7 @@
 The Pozyx ready to localize tutorial (c) Pozyx Labs
 Please read the tutorial that accompanies this sketch:
 https://www.pozyx.io/Documentation/Tutorials/ready_to_localize/Python
+
 This tutorial requires at least the contents of the Pozyx Ready to Localize kit. It demonstrates the positioning capabilities
 of the Pozyx device both locally and remotely. Follow the steps to correctly set up your environment in the link, change the
 parameters and upload this sketch. Watch the coordinates change as you move your device around!
@@ -10,9 +11,9 @@ parameters and upload this sketch. Watch the coordinates change as you move your
 from time import sleep
 
 from pypozyx import (POZYX_POS_ALG_UWB_ONLY, POZYX_3D, Coordinates, POZYX_SUCCESS, PozyxConstants, version,
-                     DeviceCoordinates, PozyxSerial, get_first_pozyx_serial_port, SingleRegister, DeviceList, PozyxRegisters)
+                     DeviceCoordinates, PozyxSerial, get_first_pozyx_serial_port, SingleRegister, DeviceList, PozyxRegisters, Data)
 from pythonosc.udp_client import SimpleUDPClient
-
+from pypozyx.structures import device_information
 from pypozyx.tools.version_check import perform_latest_version_check
 
 
@@ -155,13 +156,13 @@ if __name__ == "__main__":
         print("No Pozyx connected. Check your USB cable or your driver!")
         quit()
 
-    remote_id = 0x671d                 # remote device network ID
-    remote = True                 # whether to use a remote device
+    remote_id = 0x6e66                 # remote device network ID
+    remote = False                   # whether to use a remote device
     if not remote:
         remote_id = None
 
     # enable to send position data through OSC
-    use_processing = True
+    use_processing = False
 
     # configure if you want to route OSC to outside your localhost. Networking knowledge is required.
     ip = "127.0.0.1"
@@ -172,9 +173,10 @@ if __name__ == "__main__":
         osc_udp_client = SimpleUDPClient(ip, network_port)
 
     # necessary data for calibration, change the IDs and coordinates yourself according to your measurement
-    anchors = [DeviceCoordinates(0x9733, 1, Coordinates(0, 0, 0)),
-               DeviceCoordinates(0x971a, 1, Coordinates(2100, 0, 0)),
-               DeviceCoordinates(0x972d, 1, Coordinates(5830, 2670, 580))]
+    anchors = [DeviceCoordinates(0x762a, 1, Coordinates(0, 0, 0)),
+               DeviceCoordinates(0x6733, 1, Coordinates(3320, -120, 100)),
+               DeviceCoordinates(0x671a, 1, Coordinates(4480, 2350, 100)),
+               DeviceCoordinates(0x627d, 1, Coordinates(140, 2210, -60))]
 
     # positioning algorithm to use, other is PozyxConstants.POSITIONING_ALGORITHM_TRACKING
     algorithm = PozyxConstants.POSITIONING_ALGORITHM_UWB_ONLY
@@ -184,6 +186,22 @@ if __name__ == "__main__":
     height = 1000
 
     pozyx = PozyxSerial(serial_port)
+
+    pozyx.clearDevices(remote_id)
+    if  pozyx.doDiscovery(discovery_type=PozyxConstants.DISCOVERY_ALL_DEVICES, remote_id=remote_id) == POZYX_SUCCESS:
+        print("yoink")
+        pozyx.printDeviceList(remote_id)
+    else:
+        print("reeee")
+
+    data = Data([1,2,3,4,5])
+    pozyx.getRead(PozyxRegisters.WHO_AM_I, data, remote_id=remote_id)
+    print('who am i: 0x%0.2x' % data[0])
+    print('firmware version: 0x%0.2x' % data[1])
+    print('hardware version: 0x%0.2x' % data[2])
+    print('self test result: %s' % bin(data[3]))
+    print('error: 0x%0.2x' % data[4])
+
     r = ReadyToLocalize(pozyx, osc_udp_client, anchors, algorithm, dimension, height, remote_id)
     r.setup()
     while True:
