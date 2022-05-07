@@ -3,7 +3,7 @@ from enum import Enum
 import struct
 import threading
 
-COM = "/dev/stepper_teensy"
+COM = "COM10"
 arduino = serial.Serial(COM, 115200, timeout=.1)
 
 int_to_four_bytes = struct.Struct('<I').pack
@@ -55,8 +55,8 @@ def readSerial():
 	while True:
 		data = arduino.read()
 		if data:
-			# print(data.decode(), end = "") #strip out the new lines for now
-			print(data.decode(),)
+			print(data.decode(), end = "") #strip out the new lines for now
+			#print(data.decode(),)
 			# pass
 
 time.sleep(1) #give the connection a second to settle
@@ -66,7 +66,7 @@ read_thread.setDaemon(True)
 read_thread.start()
 
 while True:
-	user_cmd = raw_input("\nEnter a command:\n")
+	user_cmd = input("\nEnter a command:\n")
 	
 	if user_cmd == "init":
 		cmd = encodeInit()
