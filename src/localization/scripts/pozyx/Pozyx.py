@@ -14,7 +14,6 @@ from geometry_msgs.msg import PoseWithCovarianceStamped
 
 from pypozyx import (POZYX_POS_ALG_UWB_ONLY, POZYX_3D, Coordinates, POZYX_SUCCESS, PozyxConstants, version,
                      DeviceCoordinates, PozyxSerial, get_first_pozyx_serial_port, SingleRegister, DeviceList, PozyxRegisters, Data)
-from pythonosc.udp_client import SimpleUDPClient
 from pypozyx.structures import device_information
 from pypozyx.tools.version_check import perform_latest_version_check
 
@@ -33,8 +32,8 @@ class ReadyToLocalize(object):
         self.remote_id = remote_id
 
     def setup(self):
-        rospy.init_node('fake_pozyx_tf_broadcaster')
-        pub = rospy.Publisher('sensors/pozyx/pose', PoseWithCovarianceStamped, queue_size=10)
+        rospy.init_node('pozyx')
+        self.pub = rospy.Publisher('sensors/pozyx/pose', PoseWithCovarianceStamped, queue_size=10)
 
         """Sets up the Pozyx for positioning by calibrating its anchor list."""
         print("------------POZYX POSITIONING V{} -------------".format(version))
@@ -64,10 +63,10 @@ class ReadyToLocalize(object):
             pose = PoseWithCovarianceStamped()
             pose.header.stamp = rospy.get_rostime()
             pose.header.frame_id = "map"
-            pose.pose.pose.position.x = position.x
-            pose.pose.pose.position.y = position.y
-            pose.pose.pose.position.z = position.z
-            pub.publish(pose)
+            pose.pose.pose.position.x = position.x/1000.0
+            pose.pose.pose.position.y = position.y/1000.0
+            pose.pose.pose.position.z = position.z/1000.0
+            self.pub.publish(pose)
             self.printPublishPosition(position)
         else:
             self.printPublishErrorCode("positioning")
@@ -79,9 +78,6 @@ class ReadyToLocalize(object):
             network_id = 0
         print("POS ID {}, x(mm): {pos.x} y(mm): {pos.y} z(mm): {pos.z}".format(
             "0x%0.4x" % network_id, pos=position))
-        if self.osc_udp_client is not None:
-            self.osc_udp_client.send_message(
-                "/position", [network_id, int(position.x), int(position.y), int(position.z)])
 
     def printPublishErrorCode(self, operation):
         """Prints the Pozyx's error and possibly sends it as a OSC packet"""
@@ -181,8 +177,6 @@ if __name__ == "__main__":
     network_port = 8888
 
     osc_udp_client = None
-    if use_processing:
-        osc_udp_client = SimpleUDPClient(ip, network_port)
 
     # necessary data for calibration, change the IDs and coordinates yourself according to your measurement
     anchors = [DeviceCoordinates(0x762a, 1, Coordinates(0, 0, 0)),
