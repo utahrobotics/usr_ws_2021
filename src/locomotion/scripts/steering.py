@@ -22,9 +22,14 @@ class LocCtlr:
     rightMotion = 0.0
     leftMotion = 0.0
     wheelDist = 1.0
-    currentStartButtonState = false
-    previousStartButtonState = false
-    steeringType =0
+    currentStartButtonState = False
+    previousStartButtonState = False
+    steeringType = 0
+    inputScaleFactor = 1
+    Lfront = 0.25
+    Lback = 0.3
+    Wleft = 0.2
+    Wright = 0.2
 
     def __init__(self, Scale, _pub):
         self.pub = _pub
@@ -83,6 +88,26 @@ class LocCtlr:
         msg.throttles = velocities
         self.pub.publish(msg)
         return (angles, velocities)
+    
+    def ackermanSteer(self, left_joystickY, right_joystickx):
+        R = inputScaleFactor * (1 / right_joystickx) - ((right_joystickx / abs(right_joystickx)) * inputScaleFactor)
+        angle1 = np.degrees(np.arctan2(Lfront,R + Wleft)) - 90
+        angle2 = np.degrees(np.arctan2(Lfront,R - Wright)) - 90
+        angle3 = np.degrees(np.arctan2(Lback,R + Wleft)) - 90
+        angle4 = np.degrees(np.arctan2(Lback,R + Wright)) - 90
+        angles = [angle1, angle2, angle3, angle4]
+
+        vel = left_joystickY
+        velocities = [vel, vel, vel, vel]
+        H = Header()
+        H.stamp = rospy.Time.now()
+        msg = SteerAndThrottle()
+        msg.header = H
+        msg.angles = angles
+        msg.throttles = velocities
+        self.pub.publish(msg)
+        return (angles, velocities)
+
         
     def joyCallback(joy):
         if not rospy.get_param("/isAutonomous"):
