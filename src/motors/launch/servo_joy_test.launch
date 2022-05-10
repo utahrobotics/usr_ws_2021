@@ -1,0 +1,15 @@
+<launch>
+	<param name="controller_source" value="local" />
+	<param name="isAutonomous" value="false" />
+	<param name="multicast_address" value="224.1.1.1" />
+	<param name="multicast_port" value="42420" />
+	<param name="polling_rate" value="0.5" />
+
+	<node pkg="joy" type="joy_node" name="joy_node">
+		<param name="autorepeat_rate" value="2" />
+	</node>
+	<node pkg="telemetry" type="telemetry.py" name="telemetry" />
+	<node pkg="locomotion" type="cameras.py" name="digging" />
+	<node pkg="motors" type="servos.py" name="servos" output="screen"/>
+</launch>
+
