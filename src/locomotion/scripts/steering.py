@@ -90,10 +90,10 @@ class LocCtlr:
             angle4 = 90
         else:
             R = self.inputScaleFactor * (1 / right_joystickx) - ((right_joystickx / abs(right_joystickx)) * self.inputScaleFactor)
-            angle1 = np.degrees(np.arctan2(self.Lfront,R + self.Wleft))
-            angle2 = np.degrees(np.arctan2(self.Lfront,R - self.Wright))
-            angle3 = np.degrees(np.arctan2(self.Lback,R + self.Wleft))
-            angle4 = np.degrees(np.arctan2(self.Lback,R + self.Wright))
+            angle1 = 0 + np.degrees(np.arctan2(self.Lfront,(R - self.Wleft)))
+            angle2 = 0 + np.degrees(np.arctan2(self.Lfront,(R - self.Wright)))
+            angle3 = 0 + np.degrees(np.arctan2(-1*self.Lback,(R - self.Wleft)))
+            angle4 = 0 + np.degrees(np.arctan2(-1*self.Lback,(R - self.Wright)))
         angles = [angle1, angle2, angle3, angle4]
 
         vel = left_joystickY
