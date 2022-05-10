@@ -90,11 +90,11 @@ class LocCtlr:
         return (angles, velocities)
     
     def ackermanSteer(self, left_joystickY, right_joystickx):
-        R = inputScaleFactor * (1 / right_joystickx) - ((right_joystickx / abs(right_joystickx)) * inputScaleFactor)
-        angle1 = np.degrees(np.arctan2(Lfront,R + Wleft)) - 90
-        angle2 = np.degrees(np.arctan2(Lfront,R - Wright)) - 90
-        angle3 = np.degrees(np.arctan2(Lback,R + Wleft)) - 90
-        angle4 = np.degrees(np.arctan2(Lback,R + Wright)) - 90
+        R = self.inputScaleFactor * (1 / right_joystickx) - ((right_joystickx / abs(right_joystickx)) * self.inputScaleFactor)
+        angle1 = np.degrees(np.arctan2(self.Lfront,R + self.Wleft)) - 90
+        angle2 = np.degrees(np.arctan2(self.Lfront,R - self.Wright)) - 90
+        angle3 = np.degrees(np.arctan2(self.Lback,R + self.Wleft)) - 90
+        angle4 = np.degrees(np.arctan2(self.Lback,R + self.Wright)) - 90
         angles = [angle1, angle2, angle3, angle4]
 
         vel = left_joystickY
@@ -114,13 +114,15 @@ class LocCtlr:
             print("telemetry recieved")
             currentStartButtonState = joy["buttons"][5]
             if currentStartButtonState and not previousStartButtonState :
-                steeringType=(steeringType+1)%3
+                steeringType=(steeringType+1)%4
             if steeringType==0:
                 tankSteer(joy["axes"][0],joy["axes"][2])
             if steeringType==1:
                 radialSteer(joy["axes"][0],joy["axes"][3])
             if steeringType==2:
                 translationControl(joy["axes"][0],joy["axes"][3])
+            if steeringType==3:
+                ackermanSteer(joy["axes"][0],joy["axes"][3])
             previousStartButtonState = currentStartButtonState
 
     def autonomyCallback(twist):
