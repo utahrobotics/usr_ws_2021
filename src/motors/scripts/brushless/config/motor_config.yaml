@@ -4,7 +4,7 @@ front_left:
     direction: 19
     ready: 21
     enable: 7
-  inverted: False
+  inverted: True
 
 front_right:
   pins:
@@ -12,7 +12,7 @@ front_right:
     direction: 22
     ready: 24
     enable: 7
-  inverted: True
+  inverted: False
 
 back_left:
   pins:
