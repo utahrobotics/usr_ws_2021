@@ -41,7 +41,6 @@ class SteeringSubscriber():
     # Mobility node
     def __init__(self):
         rospy.init_node('stepper_control_node')
-        return
         
         # get an instance of RosPack with the default search paths
         rospack = rospkg.RosPack()
