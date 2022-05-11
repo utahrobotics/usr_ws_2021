@@ -67,6 +67,7 @@ add_action_files(
   FILES
   HomeMotorManual.action
   ActionFile.action
+  FakeInit.action
 )
 
 ## Generate added messages and services with any dependencies listed here

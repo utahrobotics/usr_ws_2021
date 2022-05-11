@@ -69,8 +69,8 @@ class DigCtlr:
 #            locController.tankSteer(left_speed, right_speed)
 
 if __name__ == "__main__":
-    locController = DigCtlr()
     rospy.init_node('locomotion')
+    locController = DigCtlr()
     rospy.spin()
 	#i = 0
 	#while True:
