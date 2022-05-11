@@ -1,0 +1,4 @@
+<launch>
+    <node pkg="imu" type="imu_faker.py" name="imu_faker" />
+    <node pkg="localization" type="pozyx_faker.py" name="pozyx_faker" output="screen" />
+</launch> 

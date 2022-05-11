@@ -1,0 +1,10 @@
+# Goal
+bool goal
+
+---
+#Result
+bool success
+
+---
+#Feedback
+bool isRunning
