@@ -83,17 +83,24 @@ class LocCtlr:
         return (angles, velocities)
     
     def ackermanSteer(self, left_joystickY, right_joystickx):
-        if (right_joystickx == 0): # avoid divide by zero error
-            angle1 = 90
-            angle2 = 90
-            angle3 = 90
-            angle4 = 90
-        else:
-            R = self.inputScaleFactor * (1 / right_joystickx) - ((right_joystickx / abs(right_joystickx)) * self.inputScaleFactor)
-            angle1 = 0 + np.degrees(np.arctan2(self.Lfront,(R - self.Wleft)))
-            angle2 = 0 + np.degrees(np.arctan2(self.Lfront,(R - self.Wright)))
-            angle3 = 0 + np.degrees(np.arctan2(-1*self.Lback,(R - self.Wleft)))
-            angle4 = 0 + np.degrees(np.arctan2(-1*self.Lback,(R - self.Wright)))
+        # if (right_joystickx == 0): # avoid divide by zero error
+        #     angle1 = 90
+        #     angle2 = 90
+        #     angle3 = 90
+        #     angle4 = 90
+        # else:
+        if (right_joystickx == -1): # avoid a discontinuity that occurs when input = -1
+            right_joystickx = -0.99999
+
+        R = self.inputScaleFactor * (1 / right_joystickx) - ((right_joystickx / abs(right_joystickx)) * self.inputScaleFactor)
+        angleAckFront = np.atan(self.Lfront / R)
+        angleAckBack = np.atan(-self.Lback / R)
+
+        angle1 = 90 + np.degrees(np.arctan2(self.Lfront * np.sin(angleAckFront) , (self.Lfront * np.cos(angleAckFront) - self.Wleft * np.sin(angleAckFront))))
+        angle2 = 90 + np.degrees(np.arctan2(self.Lfront * np.sin(angleAckFront) , (self.Lfront * np.cos(angleAckFront) + self.Wright * np.sin(angleAckFront))))
+        angle3 = 90 + np.degrees(np.arctan2(self.Lback * np.sin(angleAckBack) , (self.Lfront * np.cos(angleAckBack) - self.Wleft * np.sin(angleAckBack))))
+        angle4 = 90 + np.degrees(np.arctan2(self.Lback * np.sin(angleAckBack) , (self.Lfront * np.cos(angleAckBack) + self.Wright * np.sin(angleAckBack))))
+
         angles = [angle1, angle2, angle3, angle4]
 
         vel = left_joystickY
