@@ -3,7 +3,7 @@ from enum import Enum
 import struct
 import threading
 
-COM = "/dev/ttyACM0"
+COM = "COM10"
 arduino = serial.Serial(COM, 115200, timeout=.1)
 
 int_to_four_bytes = struct.Struct('<I').pack
@@ -20,6 +20,8 @@ class Command(Enum):
 	cancel = 8
 	start_manual_home = 9
 	stop_manual_home = 10
+	fake_init = 11
+	switches = 12
 
 def encodeAlignCommand(fl, fr, bl, br):
     # cmd = motor<<6 | dir<<5 | steps;
@@ -38,6 +40,12 @@ def encodeBlink(num_blinks):
 
 def encodeCancel():
 	return bytearray([Command.cancel.value])
+
+def encodeFakeInit():
+	return bytearray([Command.fake_init.value])
+
+def encodeSwitches():
+	return bytearray([Command.switches.value])
 
 def encodeHome(port):
 	return bytearray([Command.home_port.value, port])
@@ -94,6 +102,12 @@ while True:
 
 	elif user_cmd == "cancel":
 		cmd = encodeCancel()
+
+	elif user_cmd == "fake init":
+		cmd = encodeFakeInit()
+
+	elif user_cmd == "switches":
+		cmd = encodeFakeInit()
 
 	else:
 		cmd = encodeCancel()

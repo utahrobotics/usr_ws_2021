@@ -14,7 +14,7 @@ volatile int cmd = 0;
 
 const uint8_t sleepPin = 14;
 
-uint8_t homingPins[4] = {3, 3, 33, 20};
+uint8_t homingPins[4] = {20, 3, 32, 33};
 const uint8_t CSPins[4] = {0, 29, 36, 23};
 const uint8_t FaultPins[4] = {1, 30, 35, 22}; //currently unused
 const uint8_t StallPin[4] = {2, 31, 34,21}; //currently unused
@@ -119,7 +119,7 @@ void recieve_command(){
           break;
         }
 
-        case 0x10: {
+        case 0xA: {
           send_msg("stop manual home cmd recieved\n", false);
           while(Serial.available() < 1){}
           int driver_to_home = Serial.read();
@@ -127,6 +127,43 @@ void recieve_command(){
           desiredPositions[beingHomed] = 90;
           currentPositions[beingHomed] = 90;
           send_msg("stop manual home completed");
+        }
+
+        case 0xB: {
+          send_msg("fake init received\n", false);
+          
+          desiredPositions[1] = -90;
+          desiredPositions[2] = 270;
+          desiredPositions[0] = 270;
+          desiredPositions[3] = -90;
+
+          int count = 0;
+          while(currentPositions[1] != 270 || currentPositions[2] != 270 || currentPositions[0] != -90 || currentPositions[3] != -90){
+            if(count % 1000 == 0){
+              send_msg(String(currentPositions[0]) + " " + String(currentPositions[1]) + " " + String(currentPositions[2]) + " " + String(currentPositions[3]), false);
+            }
+            count++;
+          }
+
+          for(int i = 0; i < 4; i++){
+            desiredPositions[i] = 90;
+            currentPositions[i] = 90;
+          }
+
+          send_msg("fake init completed");
+          break;
+        }
+
+        case 0xC: {
+          send_msg("switch report request received\n", false);
+          
+          send_msg(String(digitalRead(homingPins[0])), false);
+          send_msg(String(digitalRead(homingPins[1])), false);
+          send_msg(String(digitalRead(homingPins[2])), false);
+          send_msg(String(digitalRead(homingPins[3])), false);
+
+          send_msg("switch report completed");
+          break;
         }
 
         default: {
@@ -252,7 +289,7 @@ void alignControllerThread(){
         //send_msg(String(diffs[i]), false);
         int degrees = diffs[i]>0?-1:1;
         steps[i] = fabs(degrees/(degrees_per_step/(gear_ratio*microstep)));
-        send_msg("setting steps: "+String(steps[i]),false);
+        //send_msg("setting steps: "+String(steps[i]),false);
         
         currentPositions[i] += degrees;
         if(degrees>=0){
@@ -273,7 +310,7 @@ void alignControllerThread(){
         //send_msg("correcting", false);
         for(int i = 0; i < 4; i++){
           if(steps[i] > 0) digitalWrite(stepPins[i], HIGH);
-          send_msg(String(steps[i]), false);
+          //send_msg(String(steps[i]), false);
         }
         delayMicroseconds(StepPeriodUs);
         for(int i = 0; i < 4; i++){
