@@ -26,7 +26,9 @@ class MsgHeaders(IntEnum):
 	START_MANUAL_HOME = 7
 	CONNECTED = 8
 	PING = 9
-	ROSOUT = 10
+	ROSOUT = 10		# A rosout message
+	SEND_ROSOUT = 11
+	DONT_SEND_ROSOUT = 12
 
 
 JoyInput = NamedTuple('JoyInput', [
@@ -201,6 +203,7 @@ class LunabaseStream(object):
 		self.termination_requested = False
 
 		self.rosout_sub = rospy.Subscriber("rosout", Log, self.rosout_callback, queue_size=10)
+		self.is_sending_rosout = False
 		self.odom_sub = rospy.Subscriber("nav_msgs/Odometry", Odometry, self.odom_callback, queue_size=10)
 
 		self.arm_publish = rospy.Publisher("set_arm_angle", Float32, queue_size=1)
@@ -240,7 +243,7 @@ class LunabaseStream(object):
 		rospy.logwarn("Successfully connected to lunabase")
 
 	def rosout_callback(self, msg):
-		if not self._connected_to_lunabase: return
+		if not self._connected_to_lunabase or not self.is_sending_rosout: return
 		self.tcp_stream.sendall(bytearray([MsgHeaders.ROSOUT, msg.level]) + bytes(msg.msg))
 
 	def odom_callback(self, odom):
@@ -312,6 +315,20 @@ class LunabaseStream(object):
 			goal.motor = msg[0]
 			self.manual_home_client.send_goal(goal)
 			rospy.logwarn("manually homing! ;-)")
+		
+		elif header == MsgHeaders.SEND_ROSOUT:
+			if self.is_sending_rosout:
+				rospy.logwarn("We are already sending rosout!")
+				return
+			self.is_sending_rosout = True
+			rospy.logwarn("Is sending rosout!")
+		
+		elif header == MsgHeaders.DONT_SEND_ROSOUT:
+			if not self.is_sending_rosout:
+				rospy.logwarn("We are already not sending rosout!")
+				return
+			self.is_sending_rosout = False
+			rospy.logwarn("Is not sending rosout!")
 
 		else:
 			raise Exception("Unrecognized header!: " + str(header))

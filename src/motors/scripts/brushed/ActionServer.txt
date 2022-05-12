@@ -1,0 +1,70 @@
+import rospy
+
+import actionlib
+
+import rospy
+
+from std_msgs.msg import Float32
+import os
+
+from pyvesc import VESC
+
+# need to make file (say actionFile) defining feedback, goal and result
+# and import from that file the Action, Goal, Result and Feedback
+
+from 
+
+class CommandServer(object):
+    # create messages that are used to publish feedback/result
+     _feedback = actionFile.msg.actionFileFeedback()
+     _result = actionFile.msg.actionFileResult()
+
+  
+     def __init__(self, name):
+        self._action_name = name
+        self._as = actionlib.SimpleActionServer(self._action_name, actionFile.msg.actionFileAction, execute_cb=self.execute_cb, auto_start = False)
+        self._as.start()
+	
+	self.drum_subscriber_ = rospy.Subscriber('drum_vel', Float32, self.drum_drive_callback,queue_size=1)
+
+        self.arm_subscriber_ = rospy.Subscriber('arm_vel', Float32, self.arm_callback,queue_size=1)
+
+        self.drum_motor = VESC(serial_port=serial_port1)
+        self.arm_motor = VESC(serial_port=serial_port2)
+
+
+     def execute_cb(self, goal):
+        success = True
+        
+	# start executing the action
+	while(true):
+		# check that preempt has not been requested by the client
+		if self._as.is_preempt_requested():
+                     rospy.loginfo('%s: Preempted' % self._action_name)
+                     self._as.set_preempted()
+                     success = False
+                     break
+		
+		#Get the goal (command) and do something (lower arm, raise arm, rotate drum in reverse direction)
+		if(goal.command = "CMD_ReverseRotate"):
+			self.drum_motor.set_duty_cycle(-10)
+		if(goal.command = "CMD_RaiseArm"):
+			self.arm_motor.set_duty_cycle(10)
+		if(goal.command = "CMD_LowerArm):
+			self.arm_motor.set_duty_cycle(-10)
+
+		if success:
+          		# update self._result = true
+             		rospy.loginfo('%s: Succeeded' % self._action_name)
+             		self._as.set_succeeded(self._result)
+			break
+		
+
+
+if __name__ == '__main__':
+      rospy.init_node('command_server')
+      server = CommandServer(rospy.get_name())
+      rospy.spin()
+
+	
+

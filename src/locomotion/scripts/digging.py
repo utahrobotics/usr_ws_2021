@@ -16,17 +16,16 @@ class DigCtlr:
 # take range from -1 to 1 and traslate that to the angle we need to move the wheels.
     def __init__(self):
         self.armPub = rospy.Publisher('arm_vel', Float32, queue_size=1)
-	self.drumPub = rospy.Publisher('drum_vel', Float32, queue_size=1)
-	rospy.Subscriber("telemetry_joy", Joy, self.joyCallback, queue_size=1)
+        self.drumPub = rospy.Publisher('drum_vel', Float32, queue_size=1)
+        rospy.Subscriber("telemetry_joy", Joy, self.joyCallback, queue_size=1)
 
     def Dig(self,_leftTrigger, _rightTrigger, _leftBumper, _rightBumper):
         armVel = 0
-	drumVel = (_leftTrigger - _rightTrigger)/2
-        if(_leftBumper ^ _rightBumper):
-		armVel = 1 if _rightBumper else -1
+        drumVel = (_leftTrigger - _rightTrigger)/2
+        if _leftBumper ^ _rightBumper:
+            armVel = 1 if _rightBumper else -1
         self.armPub.publish(Float32(armVel))
-	self.drumPub.publish(Float32(drumVel))
-
+        self.drumPub.publish(Float32(drumVel))
         return (armVel, drumVel)
         
     def joyCallback(self, joy):
@@ -50,7 +49,7 @@ if __name__ == "__main__":
     locController = DigCtlr()
     rospy.init_node('locomotion')
     rospy.spin()
-	#i = 0
-	#while True:
-		#i += 0.5
-		#print(controller.tankSteer(i,5))
+    #i = 0
+    #while True:
+        #i += 0.5
+        #print(controller.tankSteer(i,5))
