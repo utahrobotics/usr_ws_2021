@@ -360,8 +360,10 @@ class LunabaseStream(object):
 			if self.is_autonomous:
 				rospy.logwarn("Cannot dump while autonomous")
 			self.is_autonomous = True
+			self.tcp_stream.sendall(bytearray([MsgHeaders.MAKE_AUTONOMOUS]))
 			self.dump_client.send_goal(DumpGoal())
 			self.dump_client.wait_for_result()
+			self.tcp_stream.sendall(bytearray([MsgHeaders.MAKE_MANUAL]))
 			self.is_autonomous = False
 
 		else:
