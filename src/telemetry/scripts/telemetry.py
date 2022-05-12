@@ -293,7 +293,7 @@ class LunabaseStream(object):
 			self.termination_requested = True
 
 		elif header == MsgHeaders.ARM_ANGLE:
-			self.arm_publish.publish(deserialize_f32(msg)[0])
+			self.arm_publish.publish(_deserialize_f32(msg)[0])
 
 		elif header == MsgHeaders.JOY_INPUT:
 			if self.is_autonomous:
@@ -363,6 +363,11 @@ if __name__ == "__main__":
 	
 	stream = LunabaseStream()
 	rospy.on_shutdown(stream.close)
+
+	if not rospy.has_param("is_autonomous"):
+		raise ValueError("is_autonomous is not set. Please add it")
+	
+	stream.is_autonomous = bool(rospy.get_param("is_autonomous"))
 
 	if rospy.has_param("remote_ip"):
 		if not rospy.has_param("remote_port"):
