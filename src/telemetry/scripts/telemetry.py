@@ -364,10 +364,10 @@ if __name__ == "__main__":
 	stream = LunabaseStream()
 	rospy.on_shutdown(stream.close)
 
-	if not rospy.has_param("is_autonomous"):
-		raise ValueError("is_autonomous is not set. Please add it")
+	if not rospy.has_param("isAutonomous"):
+		raise ValueError("isAutonomous is not set. Please add it")
 	
-	stream.is_autonomous = bool(rospy.get_param("is_autonomous"))
+	stream.is_autonomous = bool(rospy.get_param("isAutonomous"))
 
 	if rospy.has_param("remote_ip"):
 		if not rospy.has_param("remote_port"):
