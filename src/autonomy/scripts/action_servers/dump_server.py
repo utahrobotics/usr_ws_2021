@@ -2,6 +2,7 @@ import rospy
 from abstract_server import AbstractActionServer
 from actionlib import SimpleActionClient
 from locomotion.msg import SetSpeedGoal, SetSpeedAction, SteerAndThrottle
+from autonomy.msg import DumpAction
 from math import pi
 from time import sleep
 
