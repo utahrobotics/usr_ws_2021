@@ -13,6 +13,7 @@ from nav_msgs.msg import Odometry
 from motors.msg import HomeMotorManualAction, HomeMotorManualGoal
 from actionlib import SimpleActionClient
 from rosgraph_msgs.msg import Log
+from autonomy.msg import DumpAction, DumpGoal
 
 
 class MsgHeaders(IntEnum):
@@ -29,6 +30,7 @@ class MsgHeaders(IntEnum):
 	ROSOUT = 10		# A rosout message
 	SEND_ROSOUT = 11
 	DONT_SEND_ROSOUT = 12
+	DUMP = 13
 
 
 JoyInput = NamedTuple('JoyInput', [
@@ -211,6 +213,11 @@ class LunabaseStream(object):
 		self.joy_publish = rospy.Publisher("telemetry_joy", Joy, queue_size=1)
 		self.autonomy_publish = rospy.Publisher("set_autonomy", Bool, queue_size=10)
 		self.manual_home_client = SimpleActionClient("home_motor_manual_as", HomeMotorManualAction)
+		self.dump_client = SimpleActionClient("Dump", DumpAction)
+
+		timeout = rospy.Duration(3)
+		self.manual_home_client.wait_for_server(timeout)
+		self.dump_client.wait_for_server(timeout)
 
 		self.last_joy = None
 
@@ -348,6 +355,14 @@ class LunabaseStream(object):
 				return
 			self.is_sending_rosout = False
 			rospy.logwarn("Is not sending rosout!")
+		
+		elif header == MsgHeaders.DUMP:
+			if self.is_autonomous:
+				rospy.logwarn("Cannot dump while autonomous")
+			self.is_autonomous = True
+			self.dump_client.send_goal(DumpGoal())
+			self.dump_client.wait_for_result()
+			self.is_autonomous = False
 
 		else:
 			raise Exception("Unrecognized header!: " + str(header))
