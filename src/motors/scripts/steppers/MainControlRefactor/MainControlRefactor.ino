@@ -14,7 +14,7 @@ volatile int cmd = 0;
 
 const uint8_t sleepPin = 14;
 
-uint8_t inverted[4] = {1, 0, 0, 0};
+uint8_t inverted[4] = {1, 1, 1, 0};
 
 uint8_t homingPins[4] = {20, 3, 32, 33};
 const uint8_t CSPins[4] = {0, 29, 36, 23};
