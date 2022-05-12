@@ -46,8 +46,8 @@ class DigCtlr:
         drumVel = (_leftTrigger - _rightTrigger)/2
         if(_leftBumper ^ _rightBumper):
             armVel = 1 if _rightBumper else -1
-            self.armPub.publish(Float32(armVel))
-            self.drumPub.publish(Float32(drumVel))
+        self.armPub.publish(Float32(armVel))
+        self.drumPub.publish(Float32(drumVel))
 
         return (armVel, drumVel)
         
