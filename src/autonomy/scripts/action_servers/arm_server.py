@@ -72,14 +72,14 @@ class MoveDiggerServer(AbstractActionServer):
         return 0
 
 
-class Dump(AbstractActionServer):
+class DumpServer(AbstractActionServer):
     def __init__(self):
         self._move_arm = SimpleActionClient('set_arm_speed_as', SetSpeedAction)
         self._move_drum = SimpleActionClient('set_drum_speed_as', SetSpeedAction)
         timeout = rospy.Duration(3)
         self._move_arm.wait_for_server(timeout)
         self._move_drum.wait_for_server(timeout)
-        super().__init__("Dump", DumpAction)
+        AbstractActionServer.__init__(self, "Dump", DumpAction)
     
     def execute(self, goal):
         goal = SetSpeedGoal()

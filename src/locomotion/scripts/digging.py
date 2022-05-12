@@ -33,13 +33,13 @@ class DigCtlr:
         self.drumPub.publish(Float32(goal.speed))
         result = SetSpeedResult()
         result.speed = goal.speed
-        self.a_server.set_succeeded(goal.speed)
+        self.setDrumSpeedServer.set_succeeded(result)
 
     def setArmSpeed_cb(self, goal):
         self.armPub.publish(Float32(goal.speed))
         result = SetSpeedResult()
         result.speed = goal.speed
-        self.a_server.set_succeeded(goal.speed)
+        self.setArmSpeedServer.set_succeeded(result)
 
     def Dig(self,_leftTrigger, _rightTrigger, _leftBumper, _rightBumper):
         armVel = 0
@@ -71,6 +71,7 @@ class DigCtlr:
 if __name__ == "__main__":
     rospy.init_node('locomotion')
     locController = DigCtlr()
+    
     rospy.spin()
 	#i = 0
 	#while True:
