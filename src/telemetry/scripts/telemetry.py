@@ -212,6 +212,8 @@ class LunabaseStream(object):
 		self.autonomy_publish = rospy.Publisher("set_autonomy", Bool, queue_size=10)
 		self.manual_home_client = SimpleActionClient("home_motor_manual_as", HomeMotorManualAction)
 
+		self.last_joy = None
+
 	def setup_sockets(self):
 		self.broadcast_listener = sock.socket(sock.AF_INET, sock.SOCK_DGRAM, sock.IPPROTO_UDP)
 		self.broadcast_listener.setsockopt(sock.SOL_SOCKET, sock.SO_REUSEADDR, 1)
@@ -275,6 +277,9 @@ class LunabaseStream(object):
 		except sock.error:
 			pass
 
+		if self.last_joy is not None:
+			self.joy_publish.publish(self.last_joy)
+
 	def _handle_message(self, msg):
 		if len(msg) == 0:
 			# Last test of this was unsuccesful
@@ -302,7 +307,9 @@ class LunabaseStream(object):
 			joy_inp = DeserializationStream(msg).deserialize_joy()
 			joy_header = Header()
 			joy_header.stamp = rospy.Time.now()
-			self.joy_publish.publish(Joy(header=joy_header, axes=joy_inp.axes, buttons=joy_inp.buttons))
+			joy = Joy(header=joy_header, axes=joy_inp.axes, buttons=joy_inp.buttons)
+			self.last_joy = joy
+			self.joy_publish.publish(joy)
 
 		elif header == MsgHeaders.MAKE_AUTONOMOUS:
 			if self.is_autonomous:
