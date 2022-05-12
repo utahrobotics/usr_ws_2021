@@ -17,7 +17,7 @@ import rospkg
 import threading
 
 import actionlib
-from motors.msg import HomeMotorManualAction, HomeMotorManualFeedback, HomeMotorManualResult, InitMotors
+from motors.msg import HomeMotorManualAction, HomeMotorManualFeedback, HomeMotorManualResult, FakeInitAction, FakeInitFeedback, FakeInitResult
 
 from locomotion.msg import SteerAndThrottle
 from sensor_msgs.msg import Joy
@@ -41,7 +41,6 @@ class SteeringSubscriber():
     # Mobility node
     def __init__(self):
         rospy.init_node('stepper_control_node')
-        return
         
         # get an instance of RosPack with the default search paths
         rospack = rospkg.RosPack()
@@ -77,6 +76,10 @@ class SteeringSubscriber():
 
         self.a_server = actionlib.SimpleActionServer("home_motor_manual_as", HomeMotorManualAction, execute_cb=self.start_manual_home_cb, auto_start=False)
         self.a_server.start()
+
+        self.fakeInit_as = actionlib.SimpleActionServer("fake_init_as", FakeInitAction, execute_cb=self.fakeInit_cb, auto_start=False)
+        self.fakeInit_as.start()
+
         self.stop_requested = False
         rospy.on_shutdown(self.shutdown)
 
@@ -123,6 +126,13 @@ class SteeringSubscriber():
         result.success = True;
         self.a_server.set_succeeded(result)
 
+    def fakeInit_cb(self, goal):
+        result = FakeInitResult()
+        if goal.goal:
+            StepperController.fakeInitMotors()
+        result.success = True
+        self.a_server.set_succeeded(result)
+
 
 class StepperController():
     """
@@ -162,6 +172,9 @@ class StepperController():
 
     def initMotors(self):
         self._mc.write(self._encodeInit())
+
+    def fakeInitMotors(self):
+        self._mc.write(self._encodeFakeInit())
 
     def StartManualHome(self, port):
         self._mc.write(self._encodeManualHome(port))
@@ -209,6 +222,12 @@ class StepperController():
 
     def _encodeCancel(self):
         return bytearray([Command.cancel.value])
+
+    def _encodeFakeInit():
+        return bytearray([Command.fake_init.value])
+        
+    def _encodeSwitches():
+        return bytearray([Command.switches.value])
 
     def _deg2steps(self, deg):
         """

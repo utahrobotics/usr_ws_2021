@@ -16,6 +16,7 @@ servo_max = 600  # Max pulse length out of 4096
 
 
 class CamCtlr:
+<<<<<<< HEAD
     # take range from -1 to 1 and traslate that to the angle we need to move the wheels.
     def __init__(self):
         self.CamPulse = int(servo_min + ((servo_max - servo_min) / 2))  # 150-600
@@ -50,6 +51,41 @@ class CamCtlr:
         # rospy.logwarn(joy)
         self.LastJoy = joy;
 
+=======
+# take range from -1 to 1 and traslate that to the angle we need to move the wheels.
+	def __init__(self):
+		self.CamPulse = int(servo_min+((servo_max-servo_min)/2))  # 150-600
+		self.ArmPulse = servo_min  # 150-600
+		self.LastJoy = None
+		self.camAnglePub = rospy.Publisher('cam_angle', Int32, queue_size=1)
+		self.sensorArmAnglePub = rospy.Publisher('sensor_arm_angle', Int32, queue_size=1)
+		rospy.Subscriber("telemetry_joy", Joy, self.joyCallback, queue_size=1)
+		r = rospy.Rate(100)
+		while not rospy.is_shutdown():
+			if not rospy.get_param("/isAutonomous") and not self.LastJoy == None:
+				self.CamControl(self.LastJoy.axes[6], self.LastJoy.axes[7])
+			r.sleep()
+			
+	def CamControl(self, _dPadX, _dPadY):
+		if _dPadX < 0 and self.CamPulse > servo_min:
+			self.CamPulse -= 3
+		elif _dPadX>0 and self.CamPulse < servo_max:
+			self.CamPulse += 3
+	
+		if _dPadY<0 and self.ArmPulse > servo_min:
+			self.ArmPulse -= 3
+		elif _dPadY>0  and self.ArmPulse < servo_max:
+			self.ArmPulse += 3
+
+		self.camAnglePub.publish(Int32(self.CamPulse))
+		self.sensorArmAnglePub.publish(Int32(self.ArmPulse))
+
+		return (self.CamPulse, self.ArmPulse)
+			
+	def joyCallback(self, joy):
+			# rospy.logwarn(joy)
+			self.LastJoy = joy;
+>>>>>>> origin/main
 
 #    def autonomyCallback(self,twist):
 #        global locController
@@ -67,8 +103,16 @@ class CamCtlr:
 if __name__ == "__main__":
     rospy.init_node('cameras')
     camController = CamCtlr()
+<<<<<<< HEAD
 
 # i = 0
 # while True:
 # i += 0.5
 # print(controller.tankSteer(i,5))
+=======
+    
+	# i = 0
+	# while True:
+		# i += 0.5
+		# print(controller.tankSteer(i,5))
+>>>>>>> origin/main
