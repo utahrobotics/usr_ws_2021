@@ -1,5 +1,0 @@
-bool extend     # if true, extend, otherwise retract
----
-uint8 error_code
----
-float32 percent_complete

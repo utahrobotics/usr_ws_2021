@@ -6,7 +6,7 @@
 	<param name="polling_rate" value="10" />
 
 	<node pkg="telemetry" type="telemetry.py" name="telemetry" />
-	<node pkg="autonomy" type="action_servers.py" name="actions" />
+	<node pkg="autonomy" type="autonomy_actions.py" name="autonomy_actions" />
 
 	<node pkg="locomotion" type="steering.py" name="steering" />
 	<node pkg="motors" type="serial_stepper_control.py" name="steppers" />
