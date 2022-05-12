@@ -1,0 +1,4 @@
+<launch>
+	<node pkg="autonomy" type="action_servers.py" name="actions" />
+	<node pkg="motors" type="digger_motor_controller.py" name="digger_controller" />
+</launch>

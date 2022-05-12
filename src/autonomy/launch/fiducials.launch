@@ -1,0 +1,7 @@
+<launch>
+  <remap from="/camera/image_raw/compressed" to="camera/compressed" />
+  <node pkg="cv_camera" type="cv_camera_node" name="camera">
+    <param name="file" value="/dev/realsense_rgb" />
+  </node>
+  <include file="$(find aruco_detect)/launch/aruco_detect.launch" />
+</launch>
