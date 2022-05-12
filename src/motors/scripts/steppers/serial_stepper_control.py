@@ -203,7 +203,7 @@ class StepperController():
         fr1, fr2, fr3, fr4 = self.int_to_four_bytes(fr & 0xFFFFFFFF)
         bl1, bl2, bl3, bl4 = self.int_to_four_bytes(bl & 0xFFFFFFFF)
         br1, br2, br3, br4 = self.int_to_four_bytes(br & 0xFFFFFFFF)
-        return bytearray([Command.align_all.value, int(fl1), int(fl2), int(fl3), int(fl4), int(fr1), int(fr2), int(fr3), int(fr4), int(bl1), int(bl2), int(bl3), int(bl4), int(br1), int(br2), int(br3), int(br4)])
+        return bytearray([Command.align_all.value, int(fr1), int(fr2), int(fr3), int(fr4), int(fl1), int(fl2), int(fl3), int(fl4), int(bl1), int(bl2), int(bl3), int(bl4), int(br1), int(br2), int(br3), int(br4)])
 
     def _encodeBlink(self, num_blinks):
         return bytearray([Command.blink_led.value, num_blinks])

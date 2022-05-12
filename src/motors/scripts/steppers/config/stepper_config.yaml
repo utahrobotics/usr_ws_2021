@@ -1,3 +1,14 @@
 
 serial: '/dev/stepper_teensy'
 steps: 120
+fl:
+  inverted: True
+
+fr:
+  inverted: False
+
+bl:
+  inverted: False
+
+br:
+  inverted: False

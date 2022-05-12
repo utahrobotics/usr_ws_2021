@@ -14,6 +14,8 @@ volatile int cmd = 0;
 
 const uint8_t sleepPin = 14;
 
+uint8_t inverted[4] = {1, 0, 0, 0};
+
 uint8_t homingPins[4] = {20, 3, 32, 33};
 const uint8_t CSPins[4] = {0, 29, 36, 23};
 const uint8_t FaultPins[4] = {1, 30, 35, 22}; //currently unused
@@ -294,11 +296,11 @@ void alignControllerThread(){
         currentPositions[i] += degrees;
         if(degrees>=0){
           //drivers[driverNum].setDirection(0);
-          digitalWrite(dirPins[i], LOW);
+          digitalWrite(dirPins[i], inverted[i]?HIGH:LOW);
         }
         else{
           //drivers[driverNum].setDirection(1);
-          digitalWrite(dirPins[i], HIGH);
+          digitalWrite(dirPins[i], inverted[i]?LOW:HIGH);
         }
       }
       else{
