@@ -166,6 +166,7 @@ include_directories(
  catkin_install_python(PROGRAMS
    scripts/brushed/angle_sense.py
    scripts/brushed/digger_motor_controller.py
+   scripts/brushless/stop_motors.py
    scripts/brushless/maxon_drive_controller.py
    scripts/steppers/serial_stepper_control.py
    DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}

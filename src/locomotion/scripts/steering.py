@@ -10,7 +10,7 @@ import rospy
 from std_msgs.msg import Header
 from geometry_msgs.msg import Twist
 from sensor_msgs.msg import Joy
-from locomotion.msg import SteerAndThrottle, BypassVelocity
+from locomotion.msg import SteerAndThrottle
 
 
 class LocCtlr:
@@ -144,10 +144,6 @@ class LocCtlr:
             right_speed = linear_x - angular_z
 
             self.tankSteer(left_speed, right_speed)
-    
-    def bypassCallback(self, bypass):
-        if rospy.get_param("/isAutonomous"):
-            self.tankSteer(bypass.left_joy, bypass.right_joy)
 
 if __name__ == "__main__":
     pub = rospy.Publisher('locomotion', SteerAndThrottle, queue_size=1)
@@ -155,7 +151,6 @@ if __name__ == "__main__":
     rospy.init_node('locomotion')
     rospy.Subscriber("telemetry_joy", Joy, locController.joyCallback, queue_size=1)
     rospy.Subscriber("cmd_vel", Twist, locController.autonomyCallback, queue_size=1)
-    rospy.Subscriber("bypass_vel", Twist, locController.bypassCallback, queue_size=1)
     rospy.spin()
 	#i = 0
 	#while True:

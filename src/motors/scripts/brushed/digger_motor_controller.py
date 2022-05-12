@@ -85,7 +85,7 @@ class DrivingSubscriber:
         #return
         arm_vel = msg.data
         #self.vesc.write()
-        rospy.logwarn(list(encode(SetDutyCycle(arm_vel))))
+        #rospy.logwarn(list(encode(SetDutyCycle(arm_vel))))
         data = list(encode(SetDutyCycle(arm_vel)))[2:-3]
         dat_len = len(data)+2
         data.insert(0,0) #id
@@ -96,7 +96,8 @@ class DrivingSubscriber:
         data.append(c) #checksum
         data.append(f) #checksum
         data.append(3) #end byte
-        rospy.logwarn(data)
+        #rospy.logwarn(data)
+        #self.vesc.set_duty_cycle(arm_vel)
         self.vesc.write(bytearray(data))
         
         

@@ -6,9 +6,11 @@
 	<param name="polling_rate" value="10" />
 
 	<node pkg="telemetry" type="telemetry.py" name="telemetry" />
+	<node pkg="autonomy" type="action_servers.py" name="actions" />
 
 	<node pkg="locomotion" type="steering.py" name="steering" />
 	<node pkg="motors" type="serial_stepper_control.py" name="steppers" />
+	<node pkg="motors" type="maxon_drive_controller.py" name="brushless" />
 
 	<node pkg="locomotion" type="digging.py" name="digging" />
 	<node pkg="motors" type="digger_motor_controller.py" name="brushed" output="screen"/>/>
