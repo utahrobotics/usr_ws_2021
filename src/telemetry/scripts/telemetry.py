@@ -201,6 +201,7 @@ class LunabaseStream(object):
 		self._connected_to_lunabase = False
 		self._listening_for_broadcast = False
 		self.termination_requested = False
+		self.is_autonomous = False
 
 		self.rosout_sub = rospy.Subscriber("rosout", Log, self.rosout_callback, queue_size=10)
 		self.is_sending_rosout = False
@@ -295,18 +296,29 @@ class LunabaseStream(object):
 			self.arm_publish.publish(deserialize_f32(msg)[0])
 
 		elif header == MsgHeaders.JOY_INPUT:
+			if self.is_autonomous:
+				rospy.logwarn("Ignoring joy input!")
+				return
 			joy_inp = DeserializationStream(msg).deserialize_joy()
 			joy_header = Header()
 			joy_header.stamp = rospy.Time.now()
 			self.joy_publish.publish(Joy(header=joy_header, axes=joy_inp.axes, buttons=joy_inp.buttons))
 
 		elif header == MsgHeaders.MAKE_AUTONOMOUS:
+			if self.is_autonomous:
+				rospy.logwarn("Is already autonomous!")
+				return
 			self.autonomy_publish.publish(Bool(data=True))
+			self.is_autonomous = True
 			rospy.logwarn("Received MAKE_AUTONOMOUS")
 			self.tcp_stream.sendall(bytearray([MsgHeaders.ECHO, MsgHeaders.MAKE_AUTONOMOUS]))
 
 		elif header == MsgHeaders.MAKE_MANUAL:
+			if not self.is_autonomous:
+				rospy.logwarn("Is already manual!")
+				return
 			self.autonomy_publish.publish(Bool(data=False))
+			self.is_autonomous = False
 			rospy.logwarn("Received MAKE_MANUAL")
 			self.tcp_stream.sendall(bytearray([MsgHeaders.ECHO, MsgHeaders.MAKE_MANUAL]))
 
