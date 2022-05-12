@@ -297,7 +297,8 @@ class LunabaseStream(object):
             self._current_joy_skip = self.joy_skip
         elif self._current_joy_skip == 0:
             self._current_joy_skip = self.joy_skip
-            #self.joy_publish.publish(self.last_joy)
+            # TODO, figure out how to echo joy
+            # self.joy_publish.publish(self.last_joy)
 
     def _handle_message(self, msg):
         if len(msg) == 0:
