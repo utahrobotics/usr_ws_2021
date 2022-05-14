@@ -19,7 +19,7 @@ class Servos:
 
     def cam_callback(self, msg):
     	camAng = msg.data
-	self.pwm.set_pwm(5, 0, camAng)
+	self.pwm.set_pwm(7, 0, camAng)
     	
     def sensor_arm_callback(self, msg):
     	armAng = msg.data

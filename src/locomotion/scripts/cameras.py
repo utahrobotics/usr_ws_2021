@@ -11,8 +11,8 @@ import rospy
 from std_msgs.msg import Int32
 from sensor_msgs.msg import Joy
 
-servo_min = 150  # Min pulse length out of 4096
-servo_max = 600  # Max pulse length out of 4096
+servo_min = 0  # Min pulse length out of 4096
+servo_max = 4096  # Max pulse length out of 4096
 
 
 class CamCtlr:
