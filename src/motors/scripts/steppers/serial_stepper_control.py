@@ -35,6 +35,8 @@ class Command(Enum):
     cancel = 8
     start_manual_home = 9
     stop_manual_home = 10
+    fake_init=11
+    switches=12
 
 class SteeringSubscriber():
     # This class is responsible for driving all of the Maxon motor controllers using published information from the
@@ -129,7 +131,7 @@ class SteeringSubscriber():
     def fakeInit_cb(self, goal):
         result = FakeInitResult()
         if goal.goal:
-            StepperController.fakeInitMotors()
+            self.stepper_controller.fakeInitMotors()
         result.success = True
         self.a_server.set_succeeded(result)
 
@@ -223,10 +225,10 @@ class StepperController():
     def _encodeCancel(self):
         return bytearray([Command.cancel.value])
 
-    def _encodeFakeInit():
+    def _encodeFakeInit(self):
         return bytearray([Command.fake_init.value])
         
-    def _encodeSwitches():
+    def _encodeSwitches(self):
         return bytearray([Command.switches.value])
 
     def _deg2steps(self, deg):
