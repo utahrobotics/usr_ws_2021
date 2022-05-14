@@ -88,8 +88,9 @@ class DumpServer(AbstractActionServer):
         # lift arm
         goal = SetSpeedGoal()
         goal.speed = 1.0
-        self._move_arm.send_goal(goal)
-        sleep(0.5)
+        for _ in range(6):
+            self._move_arm.send_goal(goal)
+            sleep(0.5)
         goal = SetSpeedGoal()       # Could just edit speed without reinstancing but be safe
         goal.speed = 0.0
         self._move_arm.send_goal(goal)
@@ -124,8 +125,9 @@ class DumpServer(AbstractActionServer):
         # lower arm
         goal = SetSpeedGoal()
         goal.speed = -1.0
-        self._move_arm.send_goal(goal)
-        sleep(0.5)
+        for _ in range(6):
+            self._move_arm.send_goal(goal)
+            sleep(0.5)
         goal = SetSpeedGoal()
         goal.speed = 0.0
         self._move_arm.send_goal(goal)

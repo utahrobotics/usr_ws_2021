@@ -14,10 +14,10 @@ volatile int cmd = 0;
 
 const uint8_t sleepPin = 14;
 
-uint8_t inverted[4] = {1, 1, 1, 0};
+uint8_t inverted[4] = {1, 0, 0, 0};
 
 uint8_t homingPins[4] = {20, 3, 32, 33};
-const uint8_t CSPins[4] = {0, 29, 36, 23};
+const uint8_t CSPins[4] = {23, 0, 29, 36};
 const uint8_t FaultPins[4] = {1, 30, 35, 22}; //currently unused
 const uint8_t StallPin[4] = {2, 31, 34,21}; //currently unused
 const uint8_t stepPins[4] = {19,5,28,38};
@@ -134,9 +134,9 @@ void recieve_command(){
         case 0xB: {
           send_msg("fake init received\n", false);
           
-          desiredPositions[1] = -90;
+          desiredPositions[0] = -90;
+          desiredPositions[1] = 270;
           desiredPositions[2] = 270;
-          desiredPositions[0] = 270;
           desiredPositions[3] = -90;
 
           int count = 0;
