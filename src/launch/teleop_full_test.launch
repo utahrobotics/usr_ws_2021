@@ -1,15 +1,21 @@
 <launch>
-	<param name="controller_source" value="local" />
+	<param name="controller_source" value="remote" />
 	<param name="isAutonomous" value="false" />
+	<param name="remote_ip" value="10.17.202.17" />
+	<param name="remote_port" value="42424" />
+	<param name="polling_rate" value="10" />
 
-	<node pkg="joy" type="joy_node" name="joy_node">
-		<param name="autorepeat_rate" value="2" />
-	</node>
 	<node pkg="telemetry" type="telemetry.py" name="telemetry" />
+	<node pkg="autonomy" type="autonomy_actions.py" name="autonomy_actions" />
+
 	<node pkg="locomotion" type="steering.py" name="steering" />
-	<node pkg="locomotion" type="digging.py" name="digging" />
 	<node pkg="motors" type="serial_stepper_control.py" name="steppers" />
-	<node pkg="motors" type="maxon_drive_controller.py" name="drive" />
-	<node pkg="motors" type="digger_motor_controller.py" name="dig" />
+	<node pkg="motors" type="maxon_drive_controller.py" name="brushless" />
+	
+	<node pkg="locomotion" type="cameras.py" name="cameras" />
+	<node pkg="motors" type="servos.py" name="servos" output="screen"/>
+
+	<node pkg="locomotion" type="digging.py" name="digging" />
+	<node pkg="motors" type="digger_motor_controller.py" name="brushed" output="screen"/>/>
 </launch>
 

@@ -88,7 +88,7 @@ class MaxonController():
 
         # setup the enable pin, this signlas if the motor is operational, set 1 for enabled 0 for motor diable
         self.enable_pin = enable_pin
-        GPIO.setup(channels=enable_pin, direction=GPIO.OUT, initial=GPIO.HIGH)
+        GPIO.setup(channels=enable_pin, direction=GPIO.OUT, initial=GPIO.LOW)
 
         # inverted tell us if the controller direction should be inverted or not, mostly used as a quick configuration change after motor installation
         self.inverted = inverted
@@ -101,6 +101,9 @@ class MaxonController():
 
     def set_speed(self, speed):
         # Sets the speed of the motor, the values for the speed 0-1 with 1 being the maximum velocity,
+        if(abs(speed) < 0.05):
+            GPIO.output(self.enable_pin, GPIO.LOW)
+            self.pwm_sig.ChangeDutyCycle(0);
 
         # first check the dierection of the velocity, + signifies forward, - signifies backwards
         if speed < 0:

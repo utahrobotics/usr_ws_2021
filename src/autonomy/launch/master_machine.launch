@@ -17,7 +17,7 @@
 <!--    </node>-->
 
 	<node pkg="autonomy" type="master_machine.py" name="master_machine" />
-	<node pkg="autonomy" type="action_servers.py" name="actions" />
+	<node pkg="autonomy" type="autonomy_actions.py" name="autonomy_actions" />
 
 
 </launch> 

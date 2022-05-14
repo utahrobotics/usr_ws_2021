@@ -1,0 +1,4 @@
+<launch>
+	<node pkg="locomotion" type="digging.py" name="locomotion" />
+	<node pkg="autonomy" type="action_servers.py" name="actions" />
+</launch>

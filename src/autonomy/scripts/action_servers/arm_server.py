@@ -1,8 +1,11 @@
 import rospy
 from abstract_server import AbstractActionServer
-from autonomy.msg import MoveArmAction, MoveDiggerAction, MoveArmFeedback
-from std_msgs.msg import Float32
+from autonomy.msg import MoveArmAction, MoveDiggerAction, MoveArmFeedback, DumpAction
+from std_msgs.msg import Float32, Twist
+from actionlib import SimpleActionClient
+from locomotion.msg import SetSpeedGoal, SetSpeedAction
 from math import pi
+from time import sleep
 
 
 ARM_EXTENSION_ANGLE = pi / 6
@@ -67,3 +70,64 @@ class MoveDiggerServer(AbstractActionServer):
             rospy.logwarn("Unloaded")
 
         return 0
+
+
+class DumpServer(AbstractActionServer):
+    def __init__(self):
+        self._move_arm = SimpleActionClient('set_arm_speed_as', SetSpeedAction)
+        self._move_drum = SimpleActionClient('set_drum_speed_as', SetSpeedAction)
+        timeout = rospy.Duration(3)
+        self._move_arm.wait_for_server(timeout)
+        self._move_drum.wait_for_server(timeout)
+
+        self._drive_pub = rospy.Publisher('cmd_vel', Twist)
+
+        AbstractActionServer.__init__(self, "Dump", DumpAction)
+    
+    def execute(self, goal):
+        # lift arm
+        goal = SetSpeedGoal()
+        goal.speed = 1.0
+        for _ in range(6):
+            self._move_arm.send_goal(goal)
+            sleep(0.5)
+        goal = SetSpeedGoal()       # Could just edit speed without reinstancing but be safe
+        goal.speed = 0.0
+        self._move_arm.send_goal(goal)
+        
+        # drive forward
+        goal = Twist()
+        goal.linear.x = 1
+        self._drive_pub.publish(goal)
+        sleep(2)
+        goal = Twist()
+        goal.linear.x = 0
+        self._drive_pub.publish(goal)
+
+        # unload
+        goal = SetSpeedGoal()
+        goal.speed = -1.0
+        self._move_drum.send_goal(goal)
+        sleep(1.5)
+        goal = SetSpeedGoal()
+        goal.speed = 0
+        self._move_drum.send_goal(goal)
+        
+        # drive back
+        goal = Twist()
+        goal.linear.x = -1
+        self._drive_pub.publish(goal)
+        sleep(2)
+        goal = Twist()
+        goal.linear.x = 0
+        self._drive_pub.publish(goal)
+
+        # lower arm
+        goal = SetSpeedGoal()
+        goal.speed = -1.0
+        for _ in range(6):
+            self._move_arm.send_goal(goal)
+            sleep(0.5)
+        goal = SetSpeedGoal()
+        goal.speed = 0.0
+        self._move_arm.send_goal(goal)
