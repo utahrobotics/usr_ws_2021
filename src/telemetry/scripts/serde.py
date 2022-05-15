@@ -56,10 +56,11 @@ class JoyInput:
 		if byte >= 32:
 			axis += 1
 			byte -= 32
+		if byte > self.AXIS_STEPS:
+			raise ValueError("Got byte bigger than:", self.AXIS_STEPS)
 		axis_value = float(byte) / self.AXIS_STEPS
 		if axis == 3 or axis == 4:
 			self._update_button(axis + 3, axis_value >= 0.9)
-			axis_value = 1 - axis_value * 2
 		else:
 			axis_value = axis_value * 2 - 1
 		self._update_joy(axis, axis_value)
