@@ -2,7 +2,7 @@ from struct import Struct
 
 
 class JoyInput:
-	AXIS_STEPS = 10
+	AXIS_STEPS = 20
 	
 	def __init__(self):
 		self.axes = [0, 0, 0, 1, 1, 0, 0, 0]
