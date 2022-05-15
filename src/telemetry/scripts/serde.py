@@ -56,7 +56,7 @@ class JoyInput:
 		if byte >= 32:
 			axis += 1
 			byte -= 32
-		axis_value = byte / self.AXIS_STEPS
+		axis_value = float(byte) / self.AXIS_STEPS
 		if axis == 3 or axis == 4:
 			self._update_button(axis + 3, axis_value >= 0.9)
 		elif axis <= 2 or axis == 5:
