@@ -82,6 +82,7 @@ class LunabaseStream(object):
 		self.broadcast_listener = sock.socket(sock.AF_INET, sock.SOCK_DGRAM, sock.IPPROTO_UDP)
 		self.broadcast_listener.setsockopt(sock.SOL_SOCKET, sock.SO_REUSEADDR, 1)
 		self.broadcast_listener.setblocking(False)
+		self.joy_input = JoyInput()
 		
 		self.udp_stream = sock.socket(sock.AF_INET, sock.SOCK_DGRAM)
 		self.tcp_stream = sock.socket(sock.AF_INET, sock.SOCK_STREAM)
@@ -172,14 +173,16 @@ class LunabaseStream(object):
 				rospy.logwarn("Ignoring joy axis!")
 				return
 			self._current_joy_skip = self.joy_skip
-			pub_joy(self.joy_publish, self.joy_input.deserialize_joy_axis(msg[0]))
+			self.joy_input.deserialize_joy_axis(msg[0])
+			pub_joy(self.joy_publish, self.joy_input)
 		
 		elif header == MsgHeaders.JOY_BUTTON:
 			if self.is_autonomous:
 				rospy.logwarn("Ignoring joy button!")
 				return
 			self._current_joy_skip = self.joy_skip
-			pub_joy(self.joy_publish, self.joy_input.deserialize_joy_button(msg[0]))
+			self.joy_input.deserialize_joy_button(msg[0])
+			pub_joy(self.joy_publish, self.joy_input)
 		
 		elif header == MsgHeaders.MAKE_AUTONOMOUS:
 			if self.is_autonomous:
