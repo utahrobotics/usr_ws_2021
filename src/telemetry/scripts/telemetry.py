@@ -1,9 +1,7 @@
 #!/usr/bin/env python
 
 import socket as sock
-from struct import Struct, pack
-import time
-from typing import NamedTuple, Tuple, List  # NOTE: install typing with pip
+from struct import pack
 
 import rospy
 from enum import IntEnum  # NOTE! Install enum34 with pip
@@ -13,15 +11,16 @@ from nav_msgs.msg import Odometry
 from motors.msg import HomeMotorManualAction, HomeMotorManualGoal, FakeInitAction, FakeInitGoal
 from actionlib import SimpleActionClient
 from rosgraph_msgs.msg import Log
-import zlib
 from autonomy.msg import DumpAction, DumpGoal
+
+from serde import serialize_odometry, DeserializationStream, deserialize_f32, JoyInput
 
 
 class MsgHeaders(IntEnum):
 	REQUEST_TERMINATE = 0
 	ODOMETRY = 1
 	ARM_ANGLE = 2
-	JOY_INPUT = 3
+	JOY_AXIS = 3
 	MAKE_AUTONOMOUS = 4
 	MAKE_MANUAL = 5
 	ECHO = 6
@@ -33,162 +32,15 @@ class MsgHeaders(IntEnum):
 	DONT_SEND_ROSOUT = 12
 	DUMP = 13
 	FAKE_INIT = 14
+	JOY_BUTTON = 15
 
 
-JoyInput = NamedTuple('JoyInput', [
-	('axes', List[float]),
-	('buttons', List[bool])
-])
-
-_MY_IP = ""
-
-
-def get_my_ip():
-	global _MY_IP
-	if len(_MY_IP) == 0:
-		s = sock.socket(sock.AF_INET, sock.SOCK_DGRAM)
-		s.connect(("8.8.8.8", 80))
-		_MY_IP = s.getsockname()[0]
-		s.close()
-	return _MY_IP
-
-
-_i32_struct = Struct("<i")
-_f32_struct = Struct("<f")
-_f64_struct = Struct("<d")
-# The following serialize methods can accept a tuple of numbers; All the numbers will be serialized contiguously
-serialize_i32 = _i32_struct.pack
-serialize_f32 = _f32_struct.pack
-serialize_f64 = _f64_struct.pack
-
-
-def serialize_odometry(odom):
-	return serialize_f32([
-		odom.pose.orientation.x,
-		odom.pose.orientation.y,
-		odom.pose.orientation.z,
-		odom.pose.orientation.w,
-		odom.pose.position.x,
-		odom.pose.position.y,
-		odom.pose.position.z,
-		odom.twist.linear.x,
-		odom.twist.linear.y,
-		odom.twist.linear.z,
-		odom.twist.angular.x,
-		odom.twist.angular.y,
-		odom.twist.angular.z,
-	])
-
-
-def serialize_bool_array(bools):
-	data = bytearray()
-	size = len(bools)
-	iterations = size // 8
-	
-	for i in range(iterations):
-		idx = i * 8
-		data.append(
-			bools[idx] * 1 +
-			bools[idx + 1] * 2 +
-			bools[idx + 2] * 4 +
-			bools[idx + 3] * 8 +
-			bools[idx + 4] * 16 +
-			bools[idx + 5] * 32 +
-			bools[idx + 6] * 64 +
-			bools[idx + 7] * 128
-		)
-	
-	if size % 8 != 0:
-		offset = iterations * 8
-		num = 0
-		for i in range(0, size - offset):
-			if bools[i + offset]:
-				num += pow(2, i)
-		data.append(num)
-	
-	return data
-
-
-def deserialize_bool_array(data, expected_size):
-	bools = []
-	for n in data:
-		byte = []
-		for i in range(8):
-			factor = pow(2, 7 - i)
-			if n >= factor:
-				n -= factor
-				byte.append(True)
-			else:
-				byte.append(False)
-		byte.reverse()
-		for b in byte:
-			bools.append(b)
-			expected_size -= 1
-			if expected_size == 0:
-				return bools
-
-
-# IMPORTANT NOTE
-# The following deserialize methods attempt to deserialize as much as they can from the byte stream
-# So they all return tuples
-_deserialize_i32 = _i32_struct.unpack
-_deserialize_f32 = _f32_struct.unpack
-_deserialize_f64 = _f64_struct.unpack
-
-
-class DeserializationStream(object):
-	"""
-	A helper class for deserializing byte arrays with more than one serialized element
-	Every deserialize call removes data from the beginning of the byte array
-	"""
-	
-	def __init__(self, data):
-		self.data = data
-	
-	def remaining_bytes(self):
-		return len(self.data)
-	
-	def deserialize_i32(self, count=1):
-		"""
-		:param count: Number of ints to deserialize at once
-		:return: A tuple of ints
-		"""
-		out = []
-		for i in range(count):
-			out.append(_deserialize_i32(self.data[i * 4: (i + 1) * 4])[0])
-			del self.data[i * 4: (i + 1) * 4]
-		return out
-	
-	def deserialize_f32(self, count=1):
-		"""
-		:param count: Number of floats to deserialize at once
-		:return: A tuple of floats
-		"""
-		out = []
-		for i in range(count):
-			out.append(_deserialize_f32(self.data[i * 4: (i + 1) * 4])[0])
-		del self.data[0: count * 4]
-		return out
-	
-	def deserialize_f64(self, count=1):
-		"""
-		:param count: Number of doubles to deserialize at once
-		:return: A tuple of doubles
-		"""
-		out = []
-		for i in range(count):
-			out.append(_deserialize_f64(self.data[i * 8: (i + 1) * 8])[0])
-			del self.data[i * 8: (i + 1) * 8]
-		return out
-	
-	def deserialize_joy(self):
-		self.data = zlib.decompress(self.data)
-		inp = JoyInput(
-			self.deserialize_f32(8),
-			deserialize_bool_array(self.data[0:2], 10)
-		)
-		del self.data[0:2]
-		return inp
+def pub_joy(pub, joy):
+	joy_header = Header()
+	joy_header.stamp = rospy.Time.now()
+	pub.publish(
+		Joy(header=joy_header, axes=joy.axes, buttons=joy.buttons)
+	)
 
 
 class LunabaseStream(object):
@@ -222,7 +74,7 @@ class LunabaseStream(object):
 		self.manual_home_client.wait_for_server(timeout)
 		self.dump_client.wait_for_server(timeout)
 		
-		self.last_joy = None
+		self.joy_input = JoyInput()
 		self.joy_skip = 5
 		self._current_joy_skip = 0
 	
@@ -289,13 +141,10 @@ class LunabaseStream(object):
 		except sock.error:
 			pass
 		
-		if self.last_joy is None:
-			return
-		
 		self._current_joy_skip -= 1
 		if self._current_joy_skip == 0:
 			self._current_joy_skip = self.joy_skip
-			self.joy_publish.publish(self.last_joy)
+			pub_joy(self.joy_publish, self.joy_input)
 			self._current_joy_skip = self.joy_skip
 	
 	def _handle_message(self, msg):
@@ -316,19 +165,21 @@ class LunabaseStream(object):
 			self.termination_requested = True
 		
 		elif header == MsgHeaders.ARM_ANGLE:
-			self.arm_publish.publish(_deserialize_f32(msg)[0])
+			self.arm_publish.publish(deserialize_f32(msg)[0])
 		
-		elif header == MsgHeaders.JOY_INPUT:
+		elif header == MsgHeaders.JOY_AXIS:
 			if self.is_autonomous:
-				rospy.logwarn("Ignoring joy input!")
+				rospy.logwarn("Ignoring joy axis!")
 				return
 			self._current_joy_skip = self.joy_skip
-			joy_inp = DeserializationStream(msg).deserialize_joy()
-			joy_header = Header()
-			joy_header.stamp = rospy.Time.now()
-			joy = Joy(header=joy_header, axes=joy_inp.axes, buttons=joy_inp.buttons)
-			self.last_joy = joy
-			self.joy_publish.publish(joy)
+			pub_joy(self.joy_publish, self.joy_input.deserialize_joy_axis(msg))
+		
+		elif header == MsgHeaders.JOY_BUTTON:
+			if self.is_autonomous:
+				rospy.logwarn("Ignoring joy button!")
+				return
+			self._current_joy_skip = self.joy_skip
+			pub_joy(self.joy_publish, self.joy_input.deserialize_joy_button(msg))
 		
 		elif header == MsgHeaders.MAKE_AUTONOMOUS:
 			if self.is_autonomous:
