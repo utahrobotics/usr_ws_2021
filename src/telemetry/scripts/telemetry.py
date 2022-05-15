@@ -172,14 +172,14 @@ class LunabaseStream(object):
 				rospy.logwarn("Ignoring joy axis!")
 				return
 			self._current_joy_skip = self.joy_skip
-			pub_joy(self.joy_publish, self.joy_input.deserialize_joy_axis(msg))
+			pub_joy(self.joy_publish, self.joy_input.deserialize_joy_axis(msg[0]))
 		
 		elif header == MsgHeaders.JOY_BUTTON:
 			if self.is_autonomous:
 				rospy.logwarn("Ignoring joy button!")
 				return
 			self._current_joy_skip = self.joy_skip
-			pub_joy(self.joy_publish, self.joy_input.deserialize_joy_button(msg))
+			pub_joy(self.joy_publish, self.joy_input.deserialize_joy_button(msg[0]))
 		
 		elif header == MsgHeaders.MAKE_AUTONOMOUS:
 			if self.is_autonomous:
