@@ -46,17 +46,23 @@ class JoyInput:
 			self.buttons[idx - 4] = pressed
 	
 	def deserialize_joy_axis(self, byte):
-		axis_bits = 0
+		axis = 0
 		if byte >= 128:
-			axis_bits += 4
+			axis += 4
 			byte -= 128
 		if byte >= 64:
-			axis_bits += 2
+			axis += 2
 			byte -= 64
 		if byte >= 32:
-			axis_bits += 1
+			axis += 1
 			byte -= 32
-		self._update_joy(axis_bits, byte / self.AXIS_STEPS)
+		axis_value = byte / self.AXIS_STEPS
+		if axis == 3 or axis == 4:
+			self._update_button(axis + 7, axis_value >= 0.9)
+			return
+		if axis <= 2 or axis == 5:
+			axis_value = axis_value * 2 - 1
+		self._update_joy(axis, axis_value)
 	
 	def deserialize_joy_button(self, byte):
 		pressed = False
