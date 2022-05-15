@@ -13,7 +13,7 @@ from actionlib import SimpleActionClient
 from rosgraph_msgs.msg import Log
 from autonomy.msg import DumpAction, DumpGoal
 
-from serde import serialize_odometry, DeserializationStream, deserialize_f32, JoyInput
+from serde import serialize_odometry, deserialize_f32, JoyInput
 
 
 class MsgHeaders(IntEnum):
@@ -60,7 +60,7 @@ class LunabaseStream(object):
 		self.is_autonomous = False
 		
 		self.rosout_sub = rospy.Subscriber("rosout", Log, self.rosout_callback, queue_size=10)
-		self.is_sending_rosout = False
+		self.is_sending_rosout = True
 		self.odom_sub = rospy.Subscriber("nav_msgs/Odometry", Odometry, self.odom_callback, queue_size=10)
 		
 		self.fake_init_client = SimpleActionClient("fake_init_as", FakeInitAction)
@@ -141,15 +141,15 @@ class LunabaseStream(object):
 		except sock.error:
 			pass
 		
+		# Echo the last joy message if we haven't received one in a while
 		self._current_joy_skip -= 1
 		if self._current_joy_skip == 0:
 			self._current_joy_skip = self.joy_skip
 			pub_joy(self.joy_publish, self.joy_input)
-			self._current_joy_skip = self.joy_skip
 	
 	def _handle_message(self, msg):
 		if len(msg) == 0:
-			# Last test of this was unsuccesful
+			# Last test of this was unsuccessful
 			rospy.logwarn("Remote base has closed connection to us, reconnecting...")
 			self._connected_to_lunabase = False
 			self.close()
@@ -222,6 +222,7 @@ class LunabaseStream(object):
 		elif header == MsgHeaders.DUMP:
 			if self.is_autonomous:
 				rospy.logwarn("Cannot dump while autonomous")
+				return
 			self.is_autonomous = True
 			self.tcp_stream.sendall(bytearray([MsgHeaders.MAKE_AUTONOMOUS]))
 			self.dump_client.send_goal(DumpGoal())
@@ -232,6 +233,7 @@ class LunabaseStream(object):
 		elif header == MsgHeaders.FAKE_INIT:
 			if self.is_autonomous:
 				rospy.logwarn("Cannot fake init while autonomous")
+				return
 			self.is_autonomous = True
 			self.tcp_stream.sendall(bytearray([MsgHeaders.MAKE_AUTONOMOUS]))
 			goal = FakeInitGoal()
