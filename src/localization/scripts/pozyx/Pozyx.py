@@ -40,7 +40,7 @@ class ReadyToLocalize(object):
     def setup(self):
         rospy.init_node('pozyx')
         self.posePub = rospy.Publisher('sensors/pozyx/pose', PoseWithCovarianceStamped, queue_size=10)
-        self.imuPub = rospy.Publisher('sensors/pozyx/pose', PoseWithCovarianceStamped, queue_size=10)
+        self.imuPub = rospy.Publisher('sensors/pozyx/imu', Imu, queue_size=10)
 
         self.setGetPoseServer = actionlib.SimpleActionServer(
             "get_pose_as", GetPoseAction, execute_cb=self.getPose_cb, auto_start=False)
