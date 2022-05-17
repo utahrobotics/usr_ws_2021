@@ -2,6 +2,7 @@
 
 import socket as sock
 from struct import pack
+from time import sleep
 
 import rospy
 from enum import IntEnum  # NOTE! Install enum34 with pip
@@ -46,20 +47,21 @@ def pub_joy(pub, joy):
 	)
 
 
-class FrameTicker(object):
-	def __init__(self, frames):
-		self.frames = frames
-		self._current_frames = frames
+class Timer(object):
+	"""Helper class to keep track of time"""
+	def __init__(self, duration):
+		self.duration = duration
+		self._current_duration = duration
 	
-	def tick(self):
-		self._current_frames -= 1
-		if self._current_frames == 0:
-			self._current_frames = self.frames
+	def elapse(self, delta):
+		self._current_duration -= delta
+		if self._current_duration <= 0:
+			self._current_duration = self.duration
 			return True
 		return False
 	
 	def reset(self):
-		self._current_frames = self.frames
+		self._current_duration = self.duration
 
 
 class LunabaseStream(object):
@@ -78,24 +80,27 @@ class LunabaseStream(object):
 		
 		self.rosout_sub = rospy.Subscriber("rosout", Log, self.rosout_callback, queue_size=10)
 		self.is_sending_rosout = True
-		self.odom_sub = rospy.Subscriber("nav_msgs/Odometry", Odometry, self.odom_callback, queue_size=10)
 
-		self.fake_init_client = SimpleActionClient("fake_init_as", FakeInitAction)
 		self.arm_publish = rospy.Publisher("set_arm_angle", Float32, queue_size=1)
 		self.joy_publish = rospy.Publisher("telemetry_joy", Joy, queue_size=1)
 		self.autonomy_publish = rospy.Publisher("set_autonomy", Bool, queue_size=10)
+		
+		self.fake_init_client = SimpleActionClient("fake_init_as", FakeInitAction)
 		self.manual_home_client = SimpleActionClient("home_motor_manual_as", HomeMotorManualAction)
 		self.dump_client = SimpleActionClient("Dump", DumpAction)
 		self.start_machine_client = SimpleActionClient("start_machine_as", StartMachineAction)
 		
-		timeout = rospy.Duration(3)
+		sleep(3)
+		timeout = rospy.Duration(1)
 		self.manual_home_client.wait_for_server(timeout)
 		self.dump_client.wait_for_server(timeout)
+		self.start_machine_client.wait_for_result(timeout)
 		
 		self.tf_listener = tf.TransformListener()
+		self.odom_timer = Timer(1)
 		
 		self.joy_input = JoyInput()
-		self.joy_ticker = FrameTicker(5)
+		self.joy_timer = Timer(0.5)
 	
 	def setup_sockets(self):
 		self.broadcast_listener = sock.socket(sock.AF_INET, sock.SOCK_DGRAM, sock.IPPROTO_UDP)
@@ -133,11 +138,10 @@ class LunabaseStream(object):
 		if not self._connected_to_lunabase or not self.is_sending_rosout: return
 		self.tcp_stream.sendall(bytearray([MsgHeaders.ROSOUT, msg.level]) + bytes(msg.msg))
 	
-	def odom_callback(self, odom):
-		if not self._connected_to_lunabase: return
+	def send_odom(self, odom):
 		self.udp_stream.sendall(bytearray([MsgHeaders.ODOMETRY]) + serialize_odometry(odom))
 	
-	def poll(self):
+	def poll(self, delta):
 		if self._listening_for_broadcast:
 			try:
 				addr, port_str = str(self.broadcast_listener.recv(1024)).split(":")
@@ -162,8 +166,15 @@ class LunabaseStream(object):
 			pass
 		
 		# Echo the last joy message if we haven't received one in a while
-		if self.joy_ticker.tick():
+		if self.joy_timer.elapse(delta):
 			pub_joy(self.joy_publish, self.joy_input)
+		
+		if self.odom_timer.elapse(delta):
+			try:
+				origin, rotation = self.tf_listener.lookupListener("/map", "/base_link", rospy.Time(0))
+				self.send_odom(self._construct_odom(origin, rotation))
+			except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
+				pass
 	
 	def _handle_message(self, msg):
 		if len(msg) == 0:
@@ -188,7 +199,7 @@ class LunabaseStream(object):
 			if rospy.get_param("/isAutonomous"):
 				rospy.logwarn("Ignoring joy axis!")
 				return
-			self.joy_ticker.reset()
+			self.joy_timer.reset()
 			self.joy_input.deserialize_joy_axis(msg[0])
 			pub_joy(self.joy_publish, self.joy_input)
 		
@@ -196,7 +207,7 @@ class LunabaseStream(object):
 			if rospy.get_param("/isAutonomous"):
 				rospy.logwarn("Ignoring joy button!")
 				return
-			self.joy_ticker.reset()
+			self.joy_timer.reset()
 			self.joy_input.deserialize_joy_button(msg[0])
 			pub_joy(self.joy_publish, self.joy_input)
 		
@@ -267,6 +278,18 @@ class LunabaseStream(object):
 		
 		else:
 			raise Exception("Unrecognized header!: " + str(header))
+	
+	@staticmethod
+	def _construct_odom(position, orientation):
+		pose = Pose()
+		pose.position = position
+		pose.orientation = orientation
+		
+		odom = Odometry()
+		odom.pose = PoseWithCovariance()
+		odom.pose.pose = pose
+		
+		return odom
 
 
 if __name__ == "__main__":
@@ -318,10 +341,11 @@ if __name__ == "__main__":
 		)
 
 	polling_rate = rospy.get_param("polling_rate")
+	delta = 1.0 / polling_rate
 	rate = rospy.Rate(polling_rate)
 	while not rospy.is_shutdown():
 		rate.sleep()
-		stream.poll()
+		stream.poll(delta)
 	rospy.logwarn("Polling loop has ended")
 	
 	if joy_process is not None:
