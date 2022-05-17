@@ -11,6 +11,7 @@ from std_msgs.msg import Float32, Header, Bool
 from sensor_msgs.msg import Joy
 from nav_msgs.msg import Odometry
 from motors.msg import HomeMotorManualAction, HomeMotorManualGoal, FakeInitAction, FakeInitGoal
+from autonomy.msg import StartMachineAction, StartMachineGoal, StartMachineFeedback, StartMachineResult
 from actionlib import SimpleActionClient
 from rosgraph_msgs.msg import Log
 from autonomy.msg import DumpAction, DumpGoal
@@ -32,6 +33,7 @@ class MsgHeaders(IntEnum):
     DONT_SEND_ROSOUT = 12
     DUMP = 13
     FAKE_INIT = 14
+    INITIATE_AUTONOMY_MACHINE = 15
 
 
 JoyInput = NamedTuple('JoyInput', [
@@ -215,6 +217,7 @@ class LunabaseStream(object):
         self.autonomy_publish = rospy.Publisher("set_autonomy", Bool, queue_size=10)
         self.manual_home_client = SimpleActionClient("home_motor_manual_as", HomeMotorManualAction)
         self.dump_client = SimpleActionClient("Dump", DumpAction)
+        self.start_machine_client = SimpleActionClient("start_machine_as", StartMachineAction)
 
         timeout = rospy.Duration(3)
         self.manual_home_client.wait_for_server(timeout)
@@ -390,6 +393,18 @@ class LunabaseStream(object):
             self.fake_init_client.wait_for_result()
             self.tcp_stream.sendall(bytearray([MsgHeaders.MAKE_MANUAL]))
             rospy.set_param("/isAutonomous", False)
+
+        elif header == MsgHeaders.INITIATE_AUTONOMY_MACHINE:
+            if rospy.get_param("/isAutonomous"):
+                rospy.logwarn("Cannot fake init while autonomous")
+            rospy.set_param("/isAutonomous", True)
+            goal = StartMachineGoal()
+            goal.goal = True
+            self.start_machine_client.send_goal(goal)
+            self.start_machine_client.wait_for_result()
+            rospy.logwarn("state machine finished")
+            rospy.set_param("/isAutonomous", False)
+
 
         else:
             raise Exception("Unrecognized header!: " + str(header))
