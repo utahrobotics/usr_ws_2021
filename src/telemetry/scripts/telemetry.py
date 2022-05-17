@@ -14,6 +14,8 @@ from actionlib import SimpleActionClient
 from rosgraph_msgs.msg import Log
 from autonomy.msg import DumpAction, DumpGoal
 import roslaunch
+import tf
+from geometry_msgs import Pose, Odometry, PoseWithCovariance
 
 from serde import serialize_odometry, deserialize_f32, JoyInput
 
@@ -42,6 +44,22 @@ def pub_joy(pub, joy):
 	pub.publish(
 		Joy(header=joy_header, axes=joy.axes, buttons=joy.buttons)
 	)
+
+
+class FrameTicker(object):
+	def __init__(self, frames):
+		self.frames = frames
+		self._current_frames = frames
+	
+	def tick(self):
+		self._current_frames -= 1
+		if self._current_frames == 0:
+			self._current_frames = self.frames
+			return True
+		return False
+	
+	def reset(self):
+		self._current_frames = self.frames
 
 
 class LunabaseStream(object):
@@ -74,9 +92,10 @@ class LunabaseStream(object):
 		self.manual_home_client.wait_for_server(timeout)
 		self.dump_client.wait_for_server(timeout)
 		
+		self.tf_listener = tf.TransformListener()
+		
 		self.joy_input = JoyInput()
-		self.joy_skip = 5
-		self._current_joy_skip = 0
+		self.joy_ticker = FrameTicker(5)
 	
 	def setup_sockets(self):
 		self.broadcast_listener = sock.socket(sock.AF_INET, sock.SOCK_DGRAM, sock.IPPROTO_UDP)
@@ -143,9 +162,7 @@ class LunabaseStream(object):
 			pass
 		
 		# Echo the last joy message if we haven't received one in a while
-		self._current_joy_skip -= 1
-		if self._current_joy_skip == 0:
-			self._current_joy_skip = self.joy_skip
+		if self.joy_ticker.tick():
 			pub_joy(self.joy_publish, self.joy_input)
 	
 	def _handle_message(self, msg):
@@ -171,7 +188,7 @@ class LunabaseStream(object):
 			if rospy.get_param("/isAutonomous"):
 				rospy.logwarn("Ignoring joy axis!")
 				return
-			self._current_joy_skip = self.joy_skip
+			self.joy_ticker.reset()
 			self.joy_input.deserialize_joy_axis(msg[0])
 			pub_joy(self.joy_publish, self.joy_input)
 		
@@ -179,7 +196,7 @@ class LunabaseStream(object):
 			if rospy.get_param("/isAutonomous"):
 				rospy.logwarn("Ignoring joy button!")
 				return
-			self._current_joy_skip = self.joy_skip
+			self.joy_ticker.reset()
 			self.joy_input.deserialize_joy_button(msg[0])
 			pub_joy(self.joy_publish, self.joy_input)
 		
