@@ -19,7 +19,7 @@ from serde import serialize_odometry, deserialize_f32, JoyInput
 
 
 class MsgHeaders(IntEnum):
-	REQUEST_TERMINATE = 0
+	PING = 0
 	ODOMETRY = 1
 	ARM_ANGLE = 2
 	JOY_AXIS = 3
@@ -28,7 +28,6 @@ class MsgHeaders(IntEnum):
 	ECHO = 6
 	START_MANUAL_HOME = 7
 	CONNECTED = 8
-	PING = 9
 	ROSOUT = 10  # A rosout message
 	SEND_ROSOUT = 11
 	DONT_SEND_ROSOUT = 12
@@ -58,7 +57,6 @@ class LunabaseStream(object):
 		
 		self._connected_to_lunabase = False
 		self._listening_for_broadcast = False
-		self.termination_requested = False
 		
 		self.rosout_sub = rospy.Subscriber("rosout", Log, self.rosout_callback, queue_size=10)
 		self.is_sending_rosout = True
@@ -162,10 +160,9 @@ class LunabaseStream(object):
 		
 		header = msg[0]
 		del msg[0]
-		if header == MsgHeaders.REQUEST_TERMINATE:
-			# TODO Add method to stop the bot
-			rospy.logwarn("Remote base wants us to terminate")
-			self.termination_requested = True
+		if header == MsgHeaders.PING:
+			rospy.logwarn("Pinged")
+			self.tcp_stream.sendall(bytearray([MsgHeaders.PING]))
 		
 		elif header == MsgHeaders.ARM_ANGLE:
 			self.arm_publish.publish(deserialize_f32(msg)[0])
@@ -256,14 +253,19 @@ class LunabaseStream(object):
 
 
 if __name__ == "__main__":
+	joy_process = None
+	
 	rospy.init_node('telemetry')
 	if rospy.has_param("/controller_source"):
 		param = rospy.get_param("/controller_source")
 		if param == "local":
 			rospy.logwarn("local control, using joy node")
+			
+			# Start Joy node
 			launcher = roslaunch.scriptapi.ROSLaunch()
 			launcher.start()
 			joy_process = launcher.launch(roslaunch.core.Node("joy", "joy_node"))
+			
 			pub = rospy.Publisher('telemetry_joy', Joy,  queue_size=10)
 			rospy.Subscriber("joy", Joy, pub.publish)
 			rospy.spin()
@@ -300,7 +302,10 @@ if __name__ == "__main__":
 
 	polling_rate = rospy.get_param("polling_rate")
 	rate = rospy.Rate(polling_rate)
-	while not rospy.is_shutdown() and not stream.termination_requested:
+	while not rospy.is_shutdown():
 		rate.sleep()
 		stream.poll()
 	rospy.logwarn("Polling loop has ended")
+	
+	if joy_process is not None:
+		joy_process.stop()
