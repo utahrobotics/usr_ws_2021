@@ -75,7 +75,7 @@ class ActionClient(object):
     def move_digger(self, digging=False, duration=15.0):
         goal = MoveDiggerGoal()
         goal.digging = digging
-	goal.duration = duration
+        goal.duration = duration
         self._move_digger.send_goal(goal)
         return ActionResult(self._move_digger)
 

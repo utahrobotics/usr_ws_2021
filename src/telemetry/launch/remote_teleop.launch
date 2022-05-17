@@ -4,5 +4,6 @@
 	<param name="multicast_address" value="224.1.1.1" />
 	<param name="multicast_port" value="42420" />
 	<param name="polling_rate" value="25" />
+	<param name="remote_ip" value="127.0.0.1" />
 	<node pkg="telemetry" type="telemetry.py" name="telemetry" />
 </launch>
