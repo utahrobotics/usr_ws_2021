@@ -204,7 +204,6 @@ class LunabaseStream(object):
         self._connected_to_lunabase = False
         self._listening_for_broadcast = False
         self.termination_requested = False
-        self.is_autonomous = False
 
         self.rosout_sub = rospy.Subscriber("rosout", Log, self.rosout_callback, queue_size=10)
         self.is_sending_rosout = False
@@ -321,7 +320,7 @@ class LunabaseStream(object):
             self.arm_publish.publish(_deserialize_f32(msg)[0])
 
         elif header == MsgHeaders.JOY_INPUT:
-            if self.is_autonomous:
+            if rospy.get_param("/isAutonomous"):
                 rospy.logwarn("Ignoring joy input!")
                 return
             self._rcvd_joy = True
@@ -333,11 +332,11 @@ class LunabaseStream(object):
             self.joy_publish.publish(joy)
 
         elif header == MsgHeaders.MAKE_AUTONOMOUS:
-            if self.is_autonomous:
+            if rospy.get_param("/isAutonomous"):
                 rospy.logwarn("Is already autonomous!")
                 return
             self.autonomy_publish.publish(Bool(data=True))
-            self.is_autonomous = True
+            rospy.set_param("/isAutonomous", True)
             rospy.logwarn("Received MAKE_AUTONOMOUS")
             self.tcp_stream.sendall(bytearray([MsgHeaders.ECHO, MsgHeaders.MAKE_AUTONOMOUS]))
 
@@ -346,7 +345,7 @@ class LunabaseStream(object):
                 rospy.logwarn("Is already manual!")
                 return
             self.autonomy_publish.publish(Bool(data=False))
-            self.is_autonomous = False
+            rospy.set_param("/isAutonomous", False)
             rospy.logwarn("Received MAKE_MANUAL")
             self.tcp_stream.sendall(bytearray([MsgHeaders.ECHO, MsgHeaders.MAKE_MANUAL]))
 
@@ -371,26 +370,26 @@ class LunabaseStream(object):
             rospy.logwarn("Is not sending rosout!")
         
         elif header == MsgHeaders.DUMP:
-            if self.is_autonomous:
+            if rospy.get_param("/isAutonomous"):
                 rospy.logwarn("Cannot dump while autonomous")
-            self.is_autonomous = True
+            rospy.set_param("/isAutonomous", True)
             self.tcp_stream.sendall(bytearray([MsgHeaders.MAKE_AUTONOMOUS]))
             self.dump_client.send_goal(DumpGoal())
             self.dump_client.wait_for_result()
             self.tcp_stream.sendall(bytearray([MsgHeaders.MAKE_MANUAL]))
-            self.is_autonomous = False
+            rospy.set_param("/isAutonomous", False)
         
         elif header == MsgHeaders.FAKE_INIT:
-            if self.is_autonomous:
+            if rospy.get_param("/isAutonomous"):
                 rospy.logwarn("Cannot fake init while autonomous")
-            self.is_autonomous = True
+            rospy.set_param("/isAutonomous", True)
             self.tcp_stream.sendall(bytearray([MsgHeaders.MAKE_AUTONOMOUS]))
             goal = FakeInitGoal()
             goal.goal = True
             self.fake_init_client.send_goal(goal)
             self.fake_init_client.wait_for_result()
             self.tcp_stream.sendall(bytearray([MsgHeaders.MAKE_MANUAL]))
-            self.is_autonomous = False
+            rospy.set_param("/isAutonomous", False)
 
         else:
             raise Exception("Unrecognized header!: " + str(header))
@@ -416,8 +415,6 @@ if __name__ == "__main__":
 
     if not rospy.has_param("isAutonomous"):
         raise ValueError("isAutonomous is not set. Please add it")
-    
-    stream.is_autonomous = bool(rospy.get_param("isAutonomous"))
 
     if rospy.has_param("remote_ip"):
         if not rospy.has_param("remote_port"):

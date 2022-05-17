@@ -10,6 +10,8 @@ parameters and upload this sketch. Watch the coordinates change as you move your
 """
 from time import sleep
 import rospy
+import actionlib
+from localization.msg import GetPoseAction, GetPoseFeedback, GetPoseResult
 from geometry_msgs.msg import PoseWithCovarianceStamped
 
 from pypozyx import (POZYX_POS_ALG_UWB_ONLY, POZYX_3D, Coordinates, POZYX_SUCCESS, PozyxConstants, version,
@@ -30,10 +32,14 @@ class ReadyToLocalize(object):
         self.dimension = dimension
         self.height = height
         self.remote_id = remote_id
+        self.lastPose = None;
 
     def setup(self):
         rospy.init_node('pozyx')
         self.pub = rospy.Publisher('sensors/pozyx/pose', PoseWithCovarianceStamped, queue_size=10)
+
+        self.setGetPoseServer = actionlib.SimpleActionServer(
+            "get_pose_as", GetPoseAction, execute_cb=self.getPose_cb, auto_start=False)
 
         """Sets up the Pozyx for positioning by calibrating its anchor list."""
         print("------------POZYX POSITIONING V{} -------------".format(version))
@@ -54,6 +60,12 @@ class ReadyToLocalize(object):
         self.setAnchorsManual(save_to_flash=False)
         self.printPublishConfigurationResult()
 
+    def getPose_cb(self, goal):
+        result = GetPoseResult()
+        result.pose = self.lastPose
+        self.setGetPoseServer.set_succeeded(result)
+
+
     def loop(self):
         """Performs positioning and displays/exports the results."""
         position = Coordinates()
@@ -66,6 +78,7 @@ class ReadyToLocalize(object):
             pose.pose.pose.position.x = position.x/1000.0
             pose.pose.pose.position.y = position.y/1000.0
             pose.pose.pose.position.z = position.z/1000.0
+            self.lastPose = pose
             self.pub.publish(pose)
             self.printPublishPosition(position)
         else:
