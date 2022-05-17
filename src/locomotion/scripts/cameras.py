@@ -13,8 +13,8 @@ from locomotion.msg import SetAngleAction, SetAngleFeedback, SetAngleResult
 from std_msgs.msg import Int32
 from sensor_msgs.msg import Joy
 
-servo_min = 150  # Min pulse length out of 4096
-servo_max = 600  # Max pulse length out of 4096
+servo_min = 100  # Min pulse length out of 4096
+servo_max = 650  # Max pulse length out of 4096
 
 angle_min = -25
 angle_max = 270
@@ -23,7 +23,7 @@ angle_max = 270
 class CamCtlr:
 # take range from -1 to 1 and traslate that to the angle we need to move the wheels.
 	def __init__(self):
-		self.CamPulse = int(servo_min+((servo_max-servo_min)/2))  # 150-600
+		self.CamPulse = 595  # 150-600
 		self.ArmPulse = servo_min  # 150-600
 		self.LastJoy = None
 		self.camAnglePub = rospy.Publisher('cam_angle', Int32, queue_size=1)
@@ -53,14 +53,14 @@ class CamCtlr:
 			
 	def CamControl(self, _dPadX, _dPadY):
 		if _dPadX < 0 and self.CamPulse > servo_min:
-			self.CamPulse -= 3
+			self.CamPulse -= 1
 		elif _dPadX>0 and self.CamPulse < servo_max:
-			self.CamPulse += 3
+			self.CamPulse += 1
 	
 		if _dPadY<0 and self.ArmPulse > servo_min:
-			self.ArmPulse -= 3
+			self.ArmPulse -= 1
 		elif _dPadY>0  and self.ArmPulse < servo_max:
-			self.ArmPulse += 3
+			self.ArmPulse += 1
 
 		self.camAnglePub.publish(Int32(self.CamPulse))
 		self.sensorArmAnglePub.publish(Int32(self.ArmPulse))
