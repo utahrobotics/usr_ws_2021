@@ -13,6 +13,7 @@ from autonomy.msg import StartMachineAction, StartMachineGoal, StartMachineFeedb
 from actionlib import SimpleActionClient
 from rosgraph_msgs.msg import Log
 from autonomy.msg import DumpAction, DumpGoal
+import roslaunch
 
 from serde import serialize_odometry, deserialize_f32, JoyInput
 
@@ -260,6 +261,9 @@ if __name__ == "__main__":
 		param = rospy.get_param("/controller_source")
 		if param == "local":
 			rospy.logwarn("local control, using joy node")
+			launcher = roslaunch.scriptapi.ROSLaunch()
+			launcher.start()
+			joy_process = launcher.launch(roslaunch.core.Node("joy", "joy_node"))
 			pub = rospy.Publisher('telemetry_joy', Joy,  queue_size=10)
 			rospy.Subscriber("joy", Joy, pub.publish)
 			rospy.spin()
