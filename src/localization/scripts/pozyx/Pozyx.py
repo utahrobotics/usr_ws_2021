@@ -8,14 +8,17 @@ This tutorial requires at least the contents of the Pozyx Ready to Localize kit.
 of the Pozyx device both locally and remotely. Follow the steps to correctly set up your environment in the link, change the
 parameters and upload this sketch. Watch the coordinates change as you move your device around!
 """
+import math
 from time import sleep
 import rospy
 import actionlib
 from localization.msg import GetPoseAction, GetPoseFeedback, GetPoseResult
-from geometry_msgs.msg import PoseWithCovarianceStamped
+from geometry_msgs.msg import PoseWithCovarianceStamped, Vector3
+from sensor_msgs.msg import Imu
+from std_msgs.msg import Header
 
 from pypozyx import (POZYX_POS_ALG_UWB_ONLY, POZYX_3D, Coordinates, POZYX_SUCCESS, PozyxConstants, version,
-                     DeviceCoordinates, PozyxSerial, get_first_pozyx_serial_port, SingleRegister, DeviceList, PozyxRegisters, Data)
+                     DeviceCoordinates, PozyxSerial, get_first_pozyx_serial_port, SingleRegister, DeviceList, PozyxRegisters, Data, SensorData)
 from pypozyx.structures import device_information
 from pypozyx.tools.version_check import perform_latest_version_check
 
@@ -36,7 +39,8 @@ class ReadyToLocalize(object):
 
     def setup(self):
         rospy.init_node('pozyx')
-        self.pub = rospy.Publisher('sensors/pozyx/pose', PoseWithCovarianceStamped, queue_size=10)
+        self.posePub = rospy.Publisher('sensors/pozyx/pose', PoseWithCovarianceStamped, queue_size=10)
+        self.imuPub = rospy.Publisher('sensors/pozyx/pose', PoseWithCovarianceStamped, queue_size=10)
 
         self.setGetPoseServer = actionlib.SimpleActionServer(
             "get_pose_as", GetPoseAction, execute_cb=self.getPose_cb, auto_start=False)
@@ -69,6 +73,7 @@ class ReadyToLocalize(object):
     def loop(self):
         """Performs positioning and displays/exports the results."""
         position = Coordinates()
+        sensors = SensorData()
         status = self.pozyx.doPositioning(
             position, self.dimension, self.height, self.algorithm, remote_id=self.remote_id)
         if status == POZYX_SUCCESS:
@@ -79,10 +84,42 @@ class ReadyToLocalize(object):
             pose.pose.pose.position.y = position.y/1000.0
             pose.pose.pose.position.z = position.z/1000.0
             self.lastPose = pose
-            self.pub.publish(pose)
+            self.posePub.publish(pose)
             self.printPublishPosition(position)
         else:
             self.printPublishErrorCode("positioning")
+
+        status = self.pozyx.getAllSensorData(sensors, remote_id=self.remote_id)
+        if status == POZYX_SUCCESS:
+            imuMsg = Imu()
+
+            header = Header()
+            header.stamp = rospy.Time.now()
+
+            angular_velocity = Vector3()
+            angular_velocity.x = sensors.angular_vel.x * math.pi / 180.0 #d/s to rad/s
+            angular_velocity.y = sensors.angular_vel.y * math.pi / 180.0 #d/s to rad/s
+            angular_velocity.z = sensors.angular_vel.z * math.pi / 180.0 #d/s to rad/s
+            angular_velocity_covariance = [0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+            linear_acceleration = Vector3()
+            linear_acceleration.x = (sensors.linear_acceleration.x/1000.0) * 9.8066 #mg to m/s^2
+            linear_acceleration.y = (sensors.linear_acceleration.y/1000.0) * 9.8066 #mg to m/s^2
+            linear_acceleration.z = (sensors.linear_acceleration.z/1000.0) * 9.8066 #mg to m/s^2
+            linear_acceleration_covariance = [0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+            orientation_covariance = [-1, 0, 0, 0, 0, 0, 0, 0, 0]
+
+            imuMsg.header = header
+            imuMsg.angular_velocity = angular_velocity
+            imuMsg.angular_velocity_covariance = angular_velocity_covariance
+            imuMsg.linear_acceleration = linear_acceleration
+            imuMsg.linear_acceleration_covariance = linear_acceleration_covariance
+            imuMsg.orientation_covariance = orientation_covariance
+
+            self.imuPub.publish(imuMsg)
+        else:
+            self.printPublishErrorCode("sensors")
 
     def printPublishPosition(self, position):
         """Prints the Pozyx's position and possibly sends it as a OSC packet"""
