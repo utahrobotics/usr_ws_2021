@@ -40,7 +40,7 @@ class ReadyToLocalize(object):
     def setup(self):
         rospy.init_node('pozyx')
         self.posePub = rospy.Publisher('sensors/pozyx/pose', PoseWithCovarianceStamped, queue_size=10)
-        self.imuPub = rospy.Publisher('sensors/pozyx/pose', PoseWithCovarianceStamped, queue_size=10)
+        self.imuPub = rospy.Publisher('sensors/pozyx/imu', Imu, queue_size=10)
 
         self.setGetPoseServer = actionlib.SimpleActionServer(
             "get_pose_as", GetPoseAction, execute_cb=self.getPose_cb, auto_start=False)
@@ -210,6 +210,7 @@ if __name__ == "__main__":
 
     # shortcut to not have to find out the port yourself
     serial_port = get_first_pozyx_serial_port()
+    #serial_port = "COM15"
     if serial_port is None:
         print("No Pozyx connected. Check your USB cable or your driver!")
         quit()
@@ -229,10 +230,10 @@ if __name__ == "__main__":
     osc_udp_client = None
 
     # necessary data for calibration, change the IDs and coordinates yourself according to your measurement
-    anchors = [DeviceCoordinates(0x762a, 1, Coordinates(0, 0, 0)),
-               DeviceCoordinates(0x6733, 1, Coordinates(3320, -120, 100)),
-               DeviceCoordinates(0x671a, 1, Coordinates(4480, 2350, 100)),
-               DeviceCoordinates(0x627d, 1, Coordinates(140, 2210, -60))]
+    anchors = [DeviceCoordinates(0x762a, 1, Coordinates(540, 60, 65)),
+               DeviceCoordinates(0x6733, 1, Coordinates(-540, 60, 575)),
+               DeviceCoordinates(0x671a, 1, Coordinates(-540, 60, 150)),
+               DeviceCoordinates(0x627d, 1, Coordinates(540, 60, 620))]
 
     # positioning algorithm to use, other is PozyxConstants.POSITIONING_ALGORITHM_TRACKING
     algorithm = PozyxConstants.POSITIONING_ALGORITHM_UWB_ONLY
