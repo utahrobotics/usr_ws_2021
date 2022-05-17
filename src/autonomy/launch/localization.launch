@@ -15,6 +15,13 @@
      false, false, false,
      false, false, false,
      false, false, false]</rosparam>
+     <param name="imu0" value="sensors/pozyx/imu" />
+     <rosparam param="imu0_config">
+      [false, false, false,
+       false, false, false,
+       false, false, false,
+       true, true, true,
+       false, false, false]</rosparam>
     <remap from="odometry/filtered" to="odometry/filtered_map" />
   </node>
 </launch>
