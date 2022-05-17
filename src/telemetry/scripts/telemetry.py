@@ -16,7 +16,7 @@ from rosgraph_msgs.msg import Log
 from autonomy.msg import DumpAction, DumpGoal
 import roslaunch
 import tf
-from geometry_msgs import Pose, Odometry, PoseWithCovariance
+from geometry_msgs import Pose, PoseWithCovariance
 
 from serde import serialize_odometry, deserialize_f32, JoyInput
 
