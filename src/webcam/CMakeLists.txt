@@ -9,11 +9,13 @@ project(webcam)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   rospy
-  roscpp
   usb_cam
   sensor_msgs
   image_transport
   compressed_image_transport
+  fiducial_msgs
+  geometry_msgs
+  std_msgs
 )
 
 ## System dependencies are found with CMake's conventions
@@ -74,6 +76,9 @@ find_package(catkin REQUIRED COMPONENTS
 generate_messages(
   DEPENDENCIES
   sensor_msgs
+  fiducial_msgs
+  geometry_msgs
+  std_msgs
 )
 
 ################################################
