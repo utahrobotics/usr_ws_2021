@@ -55,7 +55,7 @@ class DrivingSubscriber():
 		# if motors are ready, set the new speed to each controller
 		# TODO: check order
 		# rospy.logwarn(msg.throttles[0])
-		if(abs(max(msg.throttles)) < 0.05):
+		if(max([abs(x) for x in msg.throttles]) < 0.05):
 			print(self.controllers['front_left'].disable())
 		else:
 			print(self.controllers['front_left'].enable())
