@@ -96,7 +96,7 @@ class LunabaseStream(object):
 		timeout = rospy.Duration(1)
 		self.manual_home_client.wait_for_server(timeout)
 		self.dump_client.wait_for_server(timeout)
-		self.start_machine_client.wait_for_result(timeout)
+		self.start_machine_client.wait_for_server(timeout)
 		
 		self.tf_listener = tf.TransformListener()
 		self.odom_timer = Timer(1)
