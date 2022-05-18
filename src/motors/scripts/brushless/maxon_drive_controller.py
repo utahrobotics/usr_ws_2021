@@ -56,10 +56,9 @@ class DrivingSubscriber():
 		# TODO: check order
 		# rospy.logwarn(msg.throttles[0])
 		if(abs(max(msg.throttles)) < 0.05):
-			print(self.disable())
-			self.pwm_sig.ChangeDutyCycle(0)
+			print(self.controllers['front_left'].disable())
 		else:
-			print(self.enable())
+			print(self.controllers['front_left'].enable())
 
 		self.controllers['front_left'].set_speed(msg.throttles[0])
 		self.controllers['front_right'].set_speed(msg.throttles[2])
