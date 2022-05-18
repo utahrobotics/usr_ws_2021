@@ -9,6 +9,7 @@ project(webcam)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   rospy
+  roscpp
   usb_cam
   sensor_msgs
   image_transport
