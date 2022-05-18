@@ -1,0 +1,7 @@
+<launch>
+  <node pkg="usb_cam" type="usb_cam_node" name="webcam_publisher" clear_params="true">
+    <param name="video_device" value="/dev/webcam" />
+    <param name="framerate" value="15" />
+    <param name="autofocus" value="true" />
+  </node>
+</launch>
