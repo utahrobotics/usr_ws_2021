@@ -1,5 +1,6 @@
 <launch>
   <include file="$(find webcam)/launch/start_webcam.launch" />
   <include file="$(find aruco_detect)/launch/aruco_detect.launch" />
+  <param name="fiducial_len" value="0.5" />
   <remap from="/camera/compressed" to="/webcam/compressed" />
 </launch>
