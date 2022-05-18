@@ -1,5 +1,5 @@
 <launch>
-	<param name="controller_source" value="remote" />
+	<param name="controller_source" value="local" />
 	<param name="isAutonomous" value="false" />
 	<param name="remote_ip" value="10.17.202.17" />
 	<param name="remote_port" value="42424" />

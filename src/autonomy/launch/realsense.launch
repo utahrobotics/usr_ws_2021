@@ -69,7 +69,7 @@
   <arg name="stereo_module/exposure/2"  default="1"/>
   <arg name="stereo_module/gain/2"      default="16"/>
   
-  <node pkg="rviz" type="rviz" name="rviz" />
+  <!--<node pkg="rviz" type="rviz" name="rviz" />-->
   
 	
   <group ns="$(arg camera)">
@@ -144,5 +144,5 @@
     </include>
   </group>
 
-<node pkg="rqt_reconfigure" type="rqt_reconfigure" name="rqt_reconfigure" />
+<!--<node pkg="rqt_reconfigure" type="rqt_reconfigure" name="rqt_reconfigure" />-->
 </launch>

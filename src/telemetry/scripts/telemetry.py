@@ -40,6 +40,7 @@ class MsgHeaders(IntEnum):
 
 
 def pub_joy(pub, joy):
+	print(joy.axes)
 	joy_header = Header()
 	joy_header.stamp = rospy.Time.now()
 	pub.publish(
@@ -205,6 +206,7 @@ class LunabaseStream(object):
 				rospy.logwarn("Ignoring joy axis!")
 				return
 			self.joy_timer.reset()
+			print(bytes(list(msg)))
 			self.joy_input.deserialize_joy_axis(msg[0])
 			pub_joy(self.joy_publish, self.joy_input)
 		
@@ -213,6 +215,7 @@ class LunabaseStream(object):
 				rospy.logwarn("Ignoring joy button!")
 				return
 			self.joy_timer.reset()
+			#print(msg)
 			self.joy_input.deserialize_joy_button(msg[0])
 			pub_joy(self.joy_publish, self.joy_input)
 		
@@ -275,7 +278,7 @@ class LunabaseStream(object):
 				return
 			rospy.set_param("/isAutonomous", True)
 			goal = StartMachineGoal()
-			goal.goal = True
+			goal = True
 			self.start_machine_client.send_goal(goal)
 			self.start_machine_client.wait_for_result()
 			rospy.logwarn("state machine finished")

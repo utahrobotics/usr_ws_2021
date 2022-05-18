@@ -3,7 +3,7 @@ import rospy
 
 from std_msgs.msg import Float32
 import os
-print(os.getcwd())
+#print(os.getcwd())
 
 from pyvesc import VESC
 
@@ -47,7 +47,7 @@ crc16_tab = [0x0000, 0x1021, 0x2042, 0x3063, 0x4084,
 def crc16(data):
 	cksum = 0;
 	for i in range(len(data)):
-		print(data[i])
+		#print(data[i])
 		cksum = crc16_tab[(((cksum >> 8) ^ data[i]) & 0xFF)] ^ (cksum << 8)
 	c = (cksum >> 8) & 0xff
 	f = cksum & 0xff
@@ -61,7 +61,7 @@ class DrivingSubscriber:
     #This class is responsible for driving all of the Maxon motor controllers using published information from the 
     # Mobility node
     def __init__(self):
-        rospy.logwarn("initing")
+        #rospy.logwarn("initing")
         self.drum_subscriber_ = rospy.Subscriber('drum_vel', Float32, self.drum_drive_callback,queue_size=1)
 
         self.arm_subscriber_ = rospy.Subscriber('arm_vel', Float32, self.arm_callback,queue_size=1)

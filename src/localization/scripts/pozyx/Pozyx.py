@@ -9,6 +9,7 @@ of the Pozyx device both locally and remotely. Follow the steps to correctly set
 parameters and upload this sketch. Watch the coordinates change as you move your device around!
 """
 import math
+import os
 from time import sleep
 import rospy
 import actionlib
@@ -221,8 +222,9 @@ if __name__ == "__main__":
         perform_latest_version_check()
 
     # shortcut to not have to find out the port yourself
-    serial_port = get_first_pozyx_serial_port()
-    #serial_port = "COM15"
+    #serial_port = get_first_pozyx_serial_port()
+    serial_port = os.path.realpath("/dev/pozyx")
+    print(serial_port)
     if serial_port is None:
         print("No Pozyx connected. Check your USB cable or your driver!")
         quit()
@@ -258,7 +260,6 @@ if __name__ == "__main__":
 
     pozyx.clearDevices(remote_id)
     if  pozyx.doDiscovery(discovery_type=PozyxConstants.DISCOVERY_ALL_DEVICES, remote_id=remote_id) == POZYX_SUCCESS:
-        print("yoink")
         pozyx.printDeviceList(remote_id)
     else:
         print("reeee")
