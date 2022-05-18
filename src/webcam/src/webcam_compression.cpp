@@ -4,8 +4,8 @@
 
 
 ros::NodeHandle nh;
-image_transport::Subscriber sub = it.subscribe("/webcam/image_raw", 1, imageCallback);
 image_transport::ImageTransport it(nh);
+image_transport::Subscriber sub = it.subscribe("/webcam/image_raw", 1, imageCallback);
 image_transport::Publisher pub = it.advertise("/webcam/compressed", 1);
 
 
