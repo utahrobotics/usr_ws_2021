@@ -22,6 +22,8 @@ from pypozyx import (POZYX_POS_ALG_UWB_ONLY, POZYX_3D, Coordinates, POZYX_SUCCES
 from pypozyx.structures import device_information
 from pypozyx.tools.version_check import perform_latest_version_check
 
+import numpy as np
+
 
 class ReadyToLocalize(object):
     """Continuously calls the Pozyx positioning function and prints its position."""
@@ -35,7 +37,10 @@ class ReadyToLocalize(object):
         self.dimension = dimension
         self.height = height
         self.remote_id = remote_id
-        self.lastPose = None;
+        self.lastPose = None
+        
+        self.average_frame_count = 10
+        self._current_frames = []
 
     def setup(self):
         rospy.init_node('pozyx')
@@ -69,7 +74,6 @@ class ReadyToLocalize(object):
         result.pose = self.lastPose
         self.setGetPoseServer.set_succeeded(result)
 
-
     def loop(self):
         """Performs positioning and displays/exports the results."""
         position = Coordinates()
@@ -80,9 +84,17 @@ class ReadyToLocalize(object):
             pose = PoseWithCovarianceStamped()
             pose.header.stamp = rospy.get_rostime()
             pose.header.frame_id = "map"
-            pose.pose.pose.position.x = position.x/1000.0
-            pose.pose.pose.position.y = position.y/1000.0
-            pose.pose.pose.position.z = position.z/1000.0
+            
+            self._current_frames.append(np.array([position.x, position.y, position.z], float))
+            if len(self._current_frames) > self.average_frame_count:
+                del self._current_frames[0]
+                avg_position = sum(self._current_frames) / self.average_frame_count / 1000
+            else:
+                avg_position = sum(self._current_frames) / len(self._current_frames) / 1000
+            
+            pose.pose.pose.position.x = avg_position[0]
+            pose.pose.pose.position.y = avg_position[1]
+            pose.pose.pose.position.z = avg_position[2]
             self.lastPose = pose
             self.posePub.publish(pose)
             self.printPublishPosition(position)
