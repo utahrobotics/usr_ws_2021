@@ -137,9 +137,9 @@ class LunabaseStream(object):
 		self.tcp_stream.setblocking(False)
 		self.udp_stream.sendall(bytearray([MsgHeaders.CONNECTED]))
 		self._connected_to_lunabase = True
-		rospy.logwarn("Successfully connected to lunabase")
 		self._last_ip = addr
 		self._last_port = port
+		rospy.logwarn("Successfully connected to lunabase")
 	
 	def imu_vel_callback(self, twist_stamped):
 		self.last_twist = twist_stamped.twist
@@ -223,7 +223,6 @@ class LunabaseStream(object):
 				rospy.logwarn("Ignoring joy button!")
 				return
 			self.joy_timer.reset()
-			#print(msg)
 			self.joy_input.deserialize_joy_button(msg[0])
 			pub_joy(self.joy_publish, self.joy_input)
 		
@@ -352,6 +351,7 @@ if __name__ == "__main__":
 					addr,
 					int(port)
 				)
+				break
 			except sock.error:
 				pass
 
