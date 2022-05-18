@@ -31,12 +31,12 @@ class MsgHeaders(IntEnum):
 	ECHO = 6
 	START_MANUAL_HOME = 7
 	CONNECTED = 8
-	ROSOUT = 10  # A rosout message
-	SEND_ROSOUT = 11
-	DONT_SEND_ROSOUT = 12
-	DUMP = 13
-	FAKE_INIT = 14
-	JOY_BUTTON = 15
+	ROSOUT = 9  # A rosout message
+	SEND_ROSOUT = 10
+	DONT_SEND_ROSOUT = 11
+	DUMP = 12
+	FAKE_INIT = 13
+	JOY_BUTTON = 14
 
 
 def pub_joy(pub, joy):
