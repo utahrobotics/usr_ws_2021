@@ -103,6 +103,9 @@ class LunabaseStream(object):
 		
 		self.joy_input = JoyInput()
 		self.joy_timer = Timer(0.5)
+		
+		self._last_ip = ""
+		self._last_port = 0
 	
 	def setup_sockets(self):
 		self.broadcast_listener = sock.socket(sock.AF_INET, sock.SOCK_DGRAM, sock.IPPROTO_UDP)
@@ -135,6 +138,8 @@ class LunabaseStream(object):
 		self.udp_stream.sendall(bytearray([MsgHeaders.CONNECTED]))
 		self._connected_to_lunabase = True
 		rospy.logwarn("Successfully connected to lunabase")
+		self._last_ip = addr
+		self._last_port = port
 	
 	def imu_vel_callback(self, twist_stamped):
 		self.last_twist = twist_stamped.twist
@@ -150,13 +155,18 @@ class LunabaseStream(object):
 		if self._listening_for_broadcast:
 			try:
 				addr, port_str = str(self.broadcast_listener.recv(1024)).split(":")
+				self.direct_connect(addr, int(port_str))
 			except sock.error:
 				return
-			self.direct_connect(addr, int(port_str))
 			self.broadcast_listener = None
 			self._listening_for_broadcast = False
 		
-		if not self._connected_to_lunabase: return
+		if not self._connected_to_lunabase:
+			try:
+				self.direct_connect(self._last_ip, self._last_port)
+			except sock.error:
+				return
+		
 		try:
 			msg, _ = self.udp_stream.recvfrom(1024)
 			self._handle_message(bytearray(msg))
@@ -188,7 +198,6 @@ class LunabaseStream(object):
 			self._connected_to_lunabase = False
 			self.close()
 			self.setup_sockets()
-			self._listening_for_broadcast = True
 			return
 		
 		header = msg[0]
@@ -336,10 +345,15 @@ if __name__ == "__main__":
 		addr = rospy.get_param("remote_ip")
 		port = rospy.get_param("remote_port")
 		rospy.logwarn("Using direct connection to lunabase at " + addr + ":" + str(port))
-		stream.direct_connect(
-			addr,
-			int(port)
-		)
+		
+		while True:
+			try:
+				stream.direct_connect(
+					addr,
+					int(port)
+				)
+			except sock.error:
+				pass
 
 	else:
 		rospy.logwarn("Using broadcasting to discover lunabase")
