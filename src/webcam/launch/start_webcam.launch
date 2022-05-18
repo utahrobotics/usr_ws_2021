@@ -3,5 +3,7 @@
     <param name="video_device" value="/dev/webcam" />
     <param name="framerate" value="15" />
     <param name="autofocus" value="true" />
+    <param name="camera_name" value="webcam" />
+    <param name="pixel_format" value="yuyv" />
   </node>
 </launch>
