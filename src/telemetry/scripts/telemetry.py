@@ -28,15 +28,14 @@ class MsgHeaders(IntEnum):
 	JOY_AXIS = 3
 	INITIATE_AUTONOMY_MACHINE = 4
 	MAKE_MANUAL = 5
-	ECHO = 6
-	START_MANUAL_HOME = 7
-	CONNECTED = 8
-	ROSOUT = 9  # A rosout message
-	SEND_ROSOUT = 10
-	DONT_SEND_ROSOUT = 11
-	DUMP = 12
-	FAKE_INIT = 13
-	JOY_BUTTON = 14
+	START_MANUAL_HOME = 6
+	CONNECTED = 7
+	ROSOUT = 8  # A rosout message
+	SEND_ROSOUT = 9
+	DONT_SEND_ROSOUT = 10
+	DUMP = 11
+	FAKE_INIT = 12
+	JOY_BUTTON = 13
 
 
 def pub_joy(pub, joy):
@@ -226,7 +225,6 @@ class LunabaseStream(object):
 			self.autonomy_publish.publish(Bool(data=False))
 			rospy.set_param("/isAutonomous", False)
 			rospy.logwarn("Received MAKE_MANUAL")
-			self.tcp_stream.sendall(bytearray([MsgHeaders.ECHO, MsgHeaders.MAKE_MANUAL]))
 		
 		elif header == MsgHeaders.START_MANUAL_HOME:
 			goal = HomeMotorManualGoal()
