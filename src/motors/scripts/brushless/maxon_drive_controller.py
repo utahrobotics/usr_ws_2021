@@ -99,11 +99,11 @@ class MaxonController():
 	
 	def set_speed(self, speed):
 		# Sets the speed of the motor, the values for the speed 0-1 with 1 being the maximum velocity,
-		#        if(abs(speed) < 0.05):
-		#            print(self.disable())
-		#            self.pwm_sig.ChangeDutyCycle(0)
-		#        else:
-		#            print(self.disable())
+		if(abs(speed) < 0.05):
+			print(self.disable())
+			self.pwm_sig.ChangeDutyCycle(0)
+		else:
+			print(self.enable())
 		
 		# first check the dierection of the velocity, + signifies forward, - signifies backwards
 		if speed < 0:
