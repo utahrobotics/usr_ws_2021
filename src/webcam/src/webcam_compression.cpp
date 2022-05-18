@@ -16,7 +16,7 @@ void imageCallback(const sensor_msgs::ImageConstPtr& msg)
 image_transport::Subscriber sub = it.subscribe("/webcam/image_raw", 1, imageCallback);
 
 
-int main(int argc, char *argv[]);
+int main(int argc, char *argv[]) {
 	ros::init(argc, argv, "webcam_compression");
 	ros::spin();
 }
