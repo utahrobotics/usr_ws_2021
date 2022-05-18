@@ -50,11 +50,17 @@ class DrivingSubscriber():
 			'back_left'].ready() & self.controllers['back_left'].ready()):
 			# at least one of the motors is not ready so log it and don't move
 			# TODO: change the functionality to be more redundant and specific for the fault manager system
-			rospy.loginfo('one or motors are not ready, so no motor movment is being done')
+			rospy.logwarn('one or motors are not ready, so no motor movment is being done')
 		
 		# if motors are ready, set the new speed to each controller
 		# TODO: check order
 		# rospy.logwarn(msg.throttles[0])
+		if(abs(max(msg.throttles)) < 0.05):
+			print(self.disable())
+			self.pwm_sig.ChangeDutyCycle(0)
+		else:
+			print(self.enable())
+
 		self.controllers['front_left'].set_speed(msg.throttles[0])
 		self.controllers['front_right'].set_speed(msg.throttles[2])
 		self.controllers['back_left'].set_speed(msg.throttles[1])
@@ -99,12 +105,6 @@ class MaxonController():
 	
 	def set_speed(self, speed):
 		# Sets the speed of the motor, the values for the speed 0-1 with 1 being the maximum velocity,
-		if(abs(speed) < 0.05):
-			print(self.disable())
-			self.pwm_sig.ChangeDutyCycle(0)
-		else:
-			print(self.enable())
-		
 		# first check the dierection of the velocity, + signifies forward, - signifies backwards
 		if speed < 0:
 			# velocity is negative so set the direction to be reverse
