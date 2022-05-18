@@ -176,7 +176,7 @@ class LunabaseStream(object):
 		
 		if self.odom_timer.elapse(delta):
 			try:
-				origin, rotation = self.tf_listener.lookupListener("/map", "/base_link", rospy.Time(0))
+				origin, rotation = self.tf_listener.lookupTransform("/map", "/base_link", rospy.Time(0))
 				self.send_odom(self._construct_odom(self.last_twist, origin, rotation))
 			except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
 				pass
