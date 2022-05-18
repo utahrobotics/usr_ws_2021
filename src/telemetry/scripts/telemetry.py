@@ -16,7 +16,7 @@ from rosgraph_msgs.msg import Log
 from autonomy.msg import DumpAction, DumpGoal
 import roslaunch
 import tf
-from geometry_msgs import Pose, PoseWithCovariance
+from geometry_msgs import Pose, PoseWithCovariance, TwistStamped, Twist
 
 from serde import serialize_odometry, deserialize_f32, JoyInput
 
@@ -78,6 +78,8 @@ class LunabaseStream(object):
 		self._connected_to_lunabase = False
 		self._listening_for_broadcast = False
 		
+		self.imu_sub = rospy.Subscriber("sensors/imu/vel", TwistStamped, self.imu_vel_callback)
+		self.last_twist = Twist()
 		self.rosout_sub = rospy.Subscriber("rosout", Log, self.rosout_callback, queue_size=10)
 		self.is_sending_rosout = True
 
@@ -134,6 +136,9 @@ class LunabaseStream(object):
 		self._connected_to_lunabase = True
 		rospy.logwarn("Successfully connected to lunabase")
 	
+	def imu_vel_callback(self, twist_stamped):
+		self.last_twist = twist_stamped.twist
+	
 	def rosout_callback(self, msg):
 		if not self._connected_to_lunabase or not self.is_sending_rosout: return
 		self.tcp_stream.sendall(bytearray([MsgHeaders.ROSOUT, msg.level]) + bytes(msg.msg))
@@ -172,7 +177,7 @@ class LunabaseStream(object):
 		if self.odom_timer.elapse(delta):
 			try:
 				origin, rotation = self.tf_listener.lookupListener("/map", "/base_link", rospy.Time(0))
-				self.send_odom(self._construct_odom(origin, rotation))
+				self.send_odom(self._construct_odom(self.last_twist, origin, rotation))
 			except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
 				pass
 	
@@ -280,7 +285,7 @@ class LunabaseStream(object):
 			raise Exception("Unrecognized header!: " + str(header))
 	
 	@staticmethod
-	def _construct_odom(position, orientation):
+	def _construct_odom(twist, position, orientation):
 		pose = Pose()
 		pose.position = position
 		pose.orientation = orientation
@@ -288,6 +293,8 @@ class LunabaseStream(object):
 		odom = Odometry()
 		odom.pose = PoseWithCovariance()
 		odom.pose.pose = pose
+		
+		odom.twist.twist = twist
 		
 		return odom
 
