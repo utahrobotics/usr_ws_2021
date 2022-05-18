@@ -250,7 +250,7 @@ class LunabaseStream(object):
 				rospy.logwarn("Cannot dump while autonomous")
 				return
 			rospy.set_param("/isAutonomous", True)
-			self.tcp_stream.sendall(bytearray([MsgHeaders.MAKE_AUTONOMOUS]))
+			self.tcp_stream.sendall(bytearray([MsgHeaders.INITIATE_AUTONOMY_MACHINE]))
 			self.dump_client.send_goal(DumpGoal())
 			self.dump_client.wait_for_result()
 			self.tcp_stream.sendall(bytearray([MsgHeaders.MAKE_MANUAL]))
@@ -261,7 +261,7 @@ class LunabaseStream(object):
 				rospy.logwarn("Cannot fake init while autonomous")
 				return
 			rospy.set_param("/isAutonomous", True)
-			self.tcp_stream.sendall(bytearray([MsgHeaders.MAKE_AUTONOMOUS]))
+			self.tcp_stream.sendall(bytearray([MsgHeaders.INITIATE_AUTONOMY_MACHINE]))
 			goal = FakeInitGoal()
 			goal.goal = True
 			self.fake_init_client.send_goal(goal)
