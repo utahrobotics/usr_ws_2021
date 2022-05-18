@@ -6,4 +6,5 @@
     <param name="camera_name" value="webcam" />
     <param name="pixel_format" value="yuyv" />
   </node>
+  <node pkg="webcam" type="webcam_compression" name="webcam_compression" />
 </launch>
