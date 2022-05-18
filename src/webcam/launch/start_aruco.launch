@@ -1,0 +1,10 @@
+<launch>
+	<include file="$(find webcam)/launch/start_webcam.launch" />
+
+	<node pkg="aruco_detect" type="aruco_detect" name="aruco_detect">
+		<remap from="/camera/compressed" to="/webcam_publisher/image_raw/compressed" />
+		<remap from="/camera_info" to="/webcam_publisher/camera_info" />
+		<remap from="/image" to="/tb3_1/camera/rgb/image_raw" />
+		<param name="fiducial_len" value="0.5" />
+	</node>
+</launch>
