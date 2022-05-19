@@ -1,9 +1,12 @@
 <launch>
+    <remap to="/camera/compressed" from="/webcam_publisher/image_raw/compressed" />
+	<remap to="/camera_info" from="/webcam_publisher/camera_info" />
   <node pkg="usb_cam" type="usb_cam_node" name="webcam_publisher" clear_params="true">
     <param name="video_device" value="/dev/webcam" />
     <param name="framerate" value="15" />
     <param name="autofocus" value="true" />
-    <param name="camera_name" value="webcam" />
+    <param name="camera_name" value="narrow_stereo" />
     <param name="pixel_format" value="yuyv" />
+    <param name="camera_info_url" value="file://$(find webcam)/webcam.yaml" />
   </node>
 </launch>

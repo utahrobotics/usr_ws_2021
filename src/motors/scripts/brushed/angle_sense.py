@@ -181,5 +181,6 @@ if __name__ == "__main__":
 	rospy.init_node('angleSensor')
 	r = rospy.Rate(10) # 10hz
 	while not rospy.is_shutdown():
+		print(sensor.get_last_result())
 		pub.publish(sensor.computeDegrees(5, sensor.computeVolts(sensor.get_last_result())))
 		r.sleep()
