@@ -156,7 +156,7 @@ class StepperController():
     def cancel(self):
         self._mc.write(self._encodeCancel())
 
-    def alignMotors(self, fl, fr, bl, br):
+    def alignMotors(self, fl, bl, fr, br):
         """
             Send comm to the motor cointroller to align the front left (fl), front right (fr), back left (bl), and back right (br) motors
             Inputs:
