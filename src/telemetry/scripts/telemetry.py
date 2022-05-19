@@ -154,7 +154,7 @@ class LunabaseStream(object):
 	def img_callback(self, msg):
 		if not self._connected_to_lunabase or not self._is_streaming_vid: return
 		rospy.logwarn(msg.format)
-		self.udp_stream.sendall(bytearray([MsgHeaders.SEND_STREAM, self.frame_id] + msg.data))
+		self.udp_stream.sendall(bytearray([MsgHeaders.SEND_STREAM, self.frame_id]) + bytearray(msg.data))
 		self.frame_id += 1
 		if self.frame_id == 256:
 			self.frame_id = 0
