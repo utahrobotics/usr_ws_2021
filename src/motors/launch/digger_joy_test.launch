@@ -11,5 +11,5 @@
 	<node pkg="telemetry" type="telemetry.py" name="telemetry" />
 	<node pkg="locomotion" type="digging.py" name="digging" />
 	<node pkg="motors" type="digger_motor_controller.py" name="brushed" output="screen"/>
+	<node pkg="motors" type="angle_sense.py" name="angle_sensor"/>
 </launch>
-
