@@ -153,7 +153,7 @@ class AngleSensor:
 		upper_bound = vdd*.9
 		lower_bound = vdd*.1
 		slope = (270-90)/(upper_bound-lower_bound)
-		angle = (output-lower_bound)*slope
+		angle = (output-lower_bound)*slope+57.8
 		return angle
 
 	
@@ -181,6 +181,5 @@ if __name__ == "__main__":
 	rospy.init_node('angleSensor')
 	r = rospy.Rate(10) # 10hz
 	while not rospy.is_shutdown():
-		print(sensor.get_last_result())
 		pub.publish(sensor.computeDegrees(5, sensor.computeVolts(sensor.get_last_result())))
 		r.sleep()
