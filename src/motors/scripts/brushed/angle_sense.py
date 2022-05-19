@@ -153,7 +153,7 @@ class AngleSensor:
 		upper_bound = vdd*.9
 		lower_bound = vdd*.1
 		slope = (270-90)/(upper_bound-lower_bound)
-		angle = (output-lower_bound)*slope
+		angle = (output-lower_bound)*slope+57.8
 		return angle
 
 	

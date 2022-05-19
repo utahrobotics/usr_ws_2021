@@ -12,7 +12,6 @@ from pyvesc.VESC.messages import *
 
 from angle_sense import AngleSensor
 
-
 crc16_tab = [0x0000, 0x1021, 0x2042, 0x3063, 0x4084,
 		0x50a5, 0x60c6, 0x70e7, 0x8108, 0x9129, 0xa14a, 0xb16b, 0xc18c, 0xd1ad,
 		0xe1ce, 0xf1ef, 0x1231, 0x0210, 0x3273, 0x2252, 0x52b5, 0x4294, 0x72f7,
@@ -45,7 +44,7 @@ crc16_tab = [0x0000, 0x1021, 0x2042, 0x3063, 0x4084,
 
 
 def crc16(data):
-	cksum = 0;
+	cksum = 0
 	for i in range(len(data)):
 		#print(data[i])
 		cksum = crc16_tab[(((cksum >> 8) ^ data[i]) & 0xFF)] ^ (cksum << 8)
@@ -61,11 +60,16 @@ class DrivingSubscriber:
     #This class is responsible for driving all of the Maxon motor controllers using published information from the 
     # Mobility node
     def __init__(self):
+        self.lower_limit = 90
+        #self.upper_limit = 240
+        self.upper_limit = 200
+        self.latest_angle = -1
+        self.last_arm_vel = -1
         #rospy.logwarn("initing")
         self.drum_subscriber_ = rospy.Subscriber('drum_vel', Float32, self.drum_drive_callback,queue_size=1)
-
         self.arm_subscriber_ = rospy.Subscriber('arm_vel', Float32, self.arm_callback,queue_size=1)
-        self.arm_angle_pub = rospy.Publisher('/sensors/angleSensor/angle', Float32 , queue_size=10)
+
+        self.arm_angle_pub = rospy.Publisher('/sensors/angleSensor/angle', Float32, self.angle_callback, queue_size=10)
 
         self.vesc = VESC(serial_port=serial_port)
 
@@ -75,6 +79,11 @@ class DrivingSubscriber:
 #    def __del__(self):
 #         self.vesc.set_duty_cycle(0)
 
+    def angle_callback(self, msg):
+        angle = msg.data
+        latest_angle = angle
+
+
     def drum_drive_callback(self, msg):
         #return
         drum_vel = msg.data
@@ -82,7 +91,22 @@ class DrivingSubscriber:
         self.vesc.set_duty_cycle(drum_vel)
         
     def arm_callback(self, msg):
-        #return
+        if self.last_arm_vel == -1:
+            self.last_arm_vel = msg.data
+
+        if self.latest_angle == -1 :
+            rospy.logwarn("no angle detected. not moving arm.")
+            return
+        
+        if self.latest_angle > self.upper_limit and self.last_arm_vel < msg.data:
+            rospy.logwarn("upper limit reached. not moving arm.")
+            return
+
+        if self.latest_angle < self.lower_limit and self.last_arm_vel > msg.data:
+            rospy.logwarn("lower limit reached. not moving arm.")
+            return
+
+        
         arm_vel = msg.data
         #self.vesc.write()
         #rospy.logwarn(list(encode(SetDutyCycle(arm_vel))))
@@ -99,6 +123,7 @@ class DrivingSubscriber:
         #rospy.logwarn(data)
         #self.vesc.set_duty_cycle(arm_vel)
         self.vesc.write(bytearray(data))
+        self.last_arm_vel = msg.data
         
         
         #self.arm_motor.set_duty_cycle(arm_vel)
@@ -106,7 +131,6 @@ class DrivingSubscriber:
     def poll(self):
         #self.arm_motor.set_duty_cycle(1.0)
         pass
-        #self.arm_angle_pub.publish(self.sensor.computeDegrees(5, self.sensor.computeVolts(self.sensor.get_last_result())))
 
 #    def getAngle():
 #        return self.sensor.computeDegrees(5, self.sensor.computeVolts(self.sensor.get_last_result()))
