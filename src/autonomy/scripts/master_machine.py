@@ -6,6 +6,7 @@ from autonomy.msg import StartMachineAction, StartMachineGoal, StartMachineFeedb
 import actionlib
 from states import *
 
+
 class AutonomyMachine:
     def __init__(self):
         self.mm = StateMachine(outcomes=['finished'])
@@ -21,7 +22,7 @@ class AutonomyMachine:
 
         with self.mm:
             StateMachine.add('Init', InitializeState(), transitions={'finished': 'Drive'})
-            StateMachine.add('Initial Position', InitialPositionState(), transitions={'finished':'Drive', 'manual':'Manual'})
+            StateMachine.add('Initial Position', InitializePositionState(), transitions={'finished':'Drive', 'manual':'Manual'})
             StateMachine.add('Drive', DriveState(), transitions={'reached_dig_site': 'Dig', 'reached_bin': 'Unload', 'manual': 'Manual'})
             StateMachine.add('Dig', DigState(), transitions={'finished': 'Drive', 'manual': 'Manual'})
             StateMachine.add('Unload', UnloadState(), transitions={'finished': 'finished', 'manual': 'Manual'})
@@ -32,6 +33,7 @@ class AutonomyMachine:
 
     def startMachine_cb(self, goal):
         self.ExecuteMachine()
+
 
 if __name__ == "__main__":
     rospy.init_node("master_machine")
