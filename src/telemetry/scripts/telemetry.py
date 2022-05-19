@@ -7,7 +7,7 @@ from time import sleep
 import rospy
 from enum import IntEnum  # NOTE! Install enum34 with pip
 from std_msgs.msg import Float32, Header, Bool
-from sensor_msgs.msg import Joy
+from sensor_msgs.msg import Joy, CompressedImage
 from nav_msgs.msg import Odometry
 from motors.msg import HomeMotorManualAction, HomeMotorManualGoal, FakeInitAction, FakeInitGoal
 from autonomy.msg import StartMachineAction, StartMachineGoal, StartMachineFeedback, StartMachineResult
@@ -36,6 +36,9 @@ class MsgHeaders(IntEnum):
 	DUMP = 11
 	FAKE_INIT = 12
 	JOY_BUTTON = 13
+	VID_STREAM = 14
+	SEND_STREAM = 15
+	DONT_SEND_STREAM = 16
 
 
 def pub_joy(pub, joy):
@@ -82,6 +85,10 @@ class LunabaseStream(object):
 		self.last_twist = Twist()
 		self.rosout_sub = rospy.Subscriber("rosout", Log, self.rosout_callback, queue_size=10)
 		self.is_sending_rosout = True
+		
+		self._is_streaming_vid = True
+		self.webcam_sub = rospy.Subscriber("/camera/compressed", CompressedImage, self.img_callback, queue_size=10)
+		self.frame_id = 0
 
 		self.arm_publish = rospy.Publisher("set_arm_angle", Float32, queue_size=1)
 		self.joy_publish = rospy.Publisher("telemetry_joy", Joy, queue_size=1)
@@ -143,6 +150,14 @@ class LunabaseStream(object):
 	
 	def imu_vel_callback(self, twist_stamped):
 		self.last_twist = twist_stamped.twist
+	
+	def img_callback(self, msg):
+		if not self._connected_to_lunabase or not self._is_streaming_vid: return
+		rospy.logwarn(msg.format)
+		self.udp_stream.sendall(bytearray([MsgHeaders.SEND_STREAM, self.frame_id] + msg.data))
+		self.frame_id += 1
+		if self.frame_id == 256:
+			self.frame_id = 0
 	
 	def rosout_callback(self, msg):
 		if not self._connected_to_lunabase or not self.is_sending_rosout: return
@@ -284,11 +299,24 @@ class LunabaseStream(object):
 				return
 			rospy.set_param("/isAutonomous", True)
 			goal = StartMachineGoal()
-			goal = True
 			self.start_machine_client.send_goal(goal)
 			self.start_machine_client.wait_for_result()
 			rospy.logwarn("state machine finished")
 			rospy.set_param("/isAutonomous", False)
+		
+		elif header == MsgHeaders.SEND_STREAM:
+			if self._is_streaming_vid:
+				rospy.logwarn("Already streaming video")
+				return
+			self._is_streaming_vid = True
+			rospy.logwarn("Streaming video")
+		
+		elif header == MsgHeaders.DONT_SEND_STREAM:
+			if not self._is_streaming_vid:
+				rospy.logwarn("Already not streaming video")
+				return
+			self._is_streaming_vid = False
+			rospy.logwarn("Not streaming video")
 		
 		else:
 			raise Exception("Unrecognized header!: " + str(header))
