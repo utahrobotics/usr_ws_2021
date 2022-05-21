@@ -1,133 +1,98 @@
 import rospy
 from abstract_server import AbstractActionServer
-from autonomy.msg import MoveArmAction, MoveDiggerAction, MoveArmFeedback, DumpAction
+from autonomy.msg import DumpAction, DigAction
 from std_msgs.msg import Float32, Twist
-from actionlib import SimpleActionClient
-from locomotion.msg import SetSpeedGoal, SetSpeedAction
-from math import pi
-from time import sleep
+from locomotion.msg import SteerAndThrottle
+from rospy import sleep
 
 
-ARM_EXTENSION_ANGLE = pi / 6
-
-
-class MoveArmServer(AbstractActionServer):
-    def __init__(self):
-        AbstractActionServer.__init__(self, 'move_arm', MoveArmAction)
-        self.arm_vel_pub = rospy.Publisher('arm_vel', Float32, queue_size=1)
-        self.arm_angle_sub = rospy.Subscriber('/sensors/angleSensor/angle', Float32, self.set_arm_angle, queue_size=1)
-        self.arm_angle = 0.0
-
-    def set_arm_angle(self, angle):
-        self.arm_angle = angle
-
-    def execute(self, goal):
-        r = rospy.Rate(20)
-        if goal.extend:
-            self.arm_vel_pub.publish(Float32(1))        # 1 radian per second?
-            #while self.arm_angle < ARM_EXTENSION_ANGLE:
-                #r.sleep()
-                #self.publish_feedback(MoveArmFeedback(self.arm_angle / ARM_EXTENSION_ANGLE))
-            rospy.sleep(3)      # tmp until the arm sensor works
-            self.arm_vel_pub.publish(Float32(0))
-        else:
-            self.arm_vel_pub.publish(Float32(-1))        # 1 radian per second?
-            # this loop also only works if the arm sensor works
-            while self.arm_angle > 0:
-                r.sleep()
-                self.publish_feedback(MoveArmFeedback(1 - self.arm_angle / ARM_EXTENSION_ANGLE))
-            self.arm_vel_pub.publish(Float32(0))
-
-        if goal.extend:
-            rospy.logwarn("Extended Arm")
-        else:
-            rospy.logwarn("Retracted Arm")
-
-        return 0
-
-
-class MoveDiggerServer(AbstractActionServer):
-    def __init__(self):
-        self.drum_vel_pub = rospy.Publisher('drum_vel', Float32, queue_size=1)
-        AbstractActionServer.__init__(self, 'move_digger', MoveDiggerAction)
-
-    def execute(self, goal):
-        if goal.digging:
-            self.drum_vel_pub.publish(Float32(1))        # 1 radian per second?
-        else:
-            self.drum_vel_pub.publish(Float32(-1))        # reverse 1 radian per second?
-
-        r = rospy.Rate(10)
-        count = int(round(goal.duration * 10))
-        for i in range(count):
-            r.sleep()
-            self.publish_feedback(i / count)
-
-        self.drum_vel_pub.publish(Float32(0))
-        if goal.digging:
-            rospy.logwarn("Dug")
-        else:
-            rospy.logwarn("Unloaded")
-
-        return 0
+ARM_SPEED_PUB = rospy.Publisher('arm_vel', Float32, queue_size=1)
+DRUM_SPEED_PUB = rospy.Publisher('drum_vel', Float32, queue_size=1)
 
 
 class DumpServer(AbstractActionServer):
     def __init__(self):
-        self._move_arm = SimpleActionClient('set_arm_speed_as', SetSpeedAction)
-        self._move_drum = SimpleActionClient('set_drum_speed_as', SetSpeedAction)
-        timeout = rospy.Duration(3)
-        self._move_arm.wait_for_server(timeout)
-        self._move_drum.wait_for_server(timeout)
-
-        self._drive_pub = rospy.Publisher('cmd_vel', Twist)
-
+        self._drive_pub = rospy.Publisher('locomotion', SteerAndThrottle, queue_size=5)
+        
         AbstractActionServer.__init__(self, "Dump", DumpAction)
     
     def execute(self, goal):
+        # TODO Alignment with fiducials
         # lift arm
-        goal = SetSpeedGoal()
-        goal.speed = 1.0
+        msg = Float32(-1)
         for _ in range(6):
-            self._move_arm.send_goal(goal)
+            ARM_SPEED_PUB.publish(msg)
             sleep(0.5)
-        goal = SetSpeedGoal()       # Could just edit speed without reinstancing but be safe
-        goal.speed = 0.0
-        self._move_arm.send_goal(goal)
+        ARM_SPEED_PUB.publish(Float32(0))
+        
+        sleep(0.5)
         
         # drive forward
-        goal = Twist()
-        goal.linear.x = 1
+        goal = SteerAndThrottle()
+        goal.angles = [90, 90, 90, 90]
+        goal.throttles = [1, 1, 1, 1]
         self._drive_pub.publish(goal)
         sleep(2)
-        goal = Twist()
-        goal.linear.x = 0
+        goal = SteerAndThrottle()
+        goal.angles = [90, 90, 90, 90]
+        goal.throttles = [0, 0, 0, 0]
         self._drive_pub.publish(goal)
-
+        
+        sleep(0.5)
+        
         # unload
-        goal = SetSpeedGoal()
-        goal.speed = -1.0
-        self._move_drum.send_goal(goal)
-        sleep(1.5)
-        goal = SetSpeedGoal()
-        goal.speed = 0
-        self._move_drum.send_goal(goal)
+        DRUM_SPEED_PUB.publish(Float32(-1))
+        sleep(5)
+        DRUM_SPEED_PUB.publish(Float32(0))
+        
+        sleep(0.5)
         
         # drive back
-        goal = Twist()
-        goal.linear.x = -1
+        goal = SteerAndThrottle()
+        goal.angles = [90, 90, 90, 90]
+        goal.throttles = [-1, -1, -1, -1]
         self._drive_pub.publish(goal)
         sleep(2)
-        goal = Twist()
-        goal.linear.x = 0
+        goal = SteerAndThrottle()
+        goal.angles = [90, 90, 90, 90]
+        goal.throttles = [0, 0, 0, 0]
         self._drive_pub.publish(goal)
-
+        
+        sleep(0.5)
+        
         # lower arm
-        goal = SetSpeedGoal()
-        goal.speed = -1.0
+        msg = Float32(1)
         for _ in range(6):
-            self._move_arm.send_goal(goal)
+            ARM_SPEED_PUB.publish(msg)
             sleep(0.5)
-        goal = SetSpeedGoal()
-        goal.speed = 0.0
-        self._move_arm.send_goal(goal)
+        ARM_SPEED_PUB.publish(Float32(0))
+
+
+class DigServer(AbstractActionServer):
+    def __init__(self):
+        AbstractActionServer.__init__(self, "Dig", DigAction)
+    
+    def execute(self, goal):
+        # TODO lower arm to correct a angle
+        # lower arm
+        msg = Float32(1)
+        for _ in range(6):
+            ARM_SPEED_PUB.publish(msg)
+            sleep(0.5)
+        ARM_SPEED_PUB.publish(Float32(0))
+        
+        sleep(0.5)
+        
+        # dig
+        DRUM_SPEED_PUB.publish(Float32(1))
+        sleep(7.5)
+        DRUM_SPEED_PUB.publish(Float32(0))
+        
+        sleep(0.5)
+        
+        # raise arm higher
+        msg = Float32(-1)
+        for _ in range(12):
+            ARM_SPEED_PUB.publish(msg)
+            sleep(0.5)
+        ARM_SPEED_PUB.publish(Float32(0))

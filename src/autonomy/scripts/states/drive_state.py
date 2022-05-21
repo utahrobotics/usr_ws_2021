@@ -13,14 +13,6 @@ class DriveState(ExtendedState):
 
     def execute(self, userdata):
         userdata.current_state = 'Drive'
-        if userdata.driving_to_site:
-            # userdata.action_client.move_to(5, 2).wait_for_result()
-            userdata.action_client.move_to(5, 2)
-            rospy.sleep(1)
-            rospy.logwarn('Drove to dig site')
-            return 'reached_dig_site'
-        # userdata.action_client.move_to(0, 2).wait_for_result()
-        userdata.action_client.move_to(0, 2)
-        rospy.sleep(1)
+        # TODO: Use move_base
         rospy.logwarn('Drove to bin')
         return 'reached_bin'

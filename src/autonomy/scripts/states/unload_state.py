@@ -1,9 +1,12 @@
 import rospy
 from extended_state import ExtendedState
+from actionlib import SimpleActionClient
+from autonomy.msgs import DumpAction, DumpGoal
 
 
 class UnloadState(ExtendedState):
     def __init__(self):
+        self.dump_server = SimpleActionClient("Dump", DumpAction)
         ExtendedState.__init__(
             self,
             outcomes=['finished', 'manual'],
@@ -13,11 +16,6 @@ class UnloadState(ExtendedState):
 
     def execute(self, userdata):
         userdata.current_state = 'Unload'
-        rospy.logwarn('Extending Arm')
-        userdata.action_client.move_arm(True).wait_for_result()
-        rospy.logwarn('Unloading')
-        userdata.action_client.move_digger(False).wait_for_result()
-        rospy.logwarn('Retracting Arm')
-        userdata.action_client.move_arm(False).wait_for_result()
-        rospy.logwarn('Arm Retracted')
+        self.dump_server.send_goal(DumpGoal())
+        self.wait_for_action_result(self.dump_server)
         return 'finished'

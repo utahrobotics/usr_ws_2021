@@ -11,24 +11,11 @@ class ManualState(ExtendedState):
             output_keys=["action_client", 'current_state']
         )
 
-    def callback(self, msg):
-        if msg.data: return
-        self.spinning = False
+    def autonomy_callback(self, msg):
+        ExtendedState.autonomy_callback(self, msg)
         rospy.logwarn("EXITING MANUAL MODE")
 
     def execute(self, userdata):
         rospy.logwarn("ENTERING MANUAL MODE")
-        self.spinning = True
-        timer = rospy.Rate(10)      # 10 Hz
-
-        while self.spinning:
-            timer.sleep()
-
-        if userdata.current_state == "Drive":
-            return 'drive'
-        elif userdata.current_state == "Dig":
-            return 'dig'
-        elif userdata.current_state == "Unload":
-            return 'unload'
-        else:
-            raise KeyError("Unrecognized state: " + userdata.current_state)
+        self.sleep(0)       # wait until autonomous
+        return userdata.current_state.lower()

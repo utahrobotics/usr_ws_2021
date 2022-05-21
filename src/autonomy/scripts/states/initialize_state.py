@@ -16,12 +16,10 @@ class InitializeState(ExtendedState):
 
     def execute(self, userdata):
         userdata.current_state = 'Init'
-        rospy.logwarn("Initializing")
-        #userdata.action_client.initialize().wait_for_result()
+        rospy.logwarn("Fake initing")
         goal = FakeInitGoal()
         goal.goal = True
         self.fake_init_client.send_goal(goal)
-        #TODO: rather than just waiting, be aware of making robot manual and switch to appropriate state.
-        self.fake_init_client.wait_for_result()
-        rospy.logwarn('Initialized')
+        self.wait_for_action_result(self.fake_init_client)
+        rospy.logwarn('Fake initialized')
         return 'finished'
