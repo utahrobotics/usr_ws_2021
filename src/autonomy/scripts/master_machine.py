@@ -2,7 +2,7 @@
 
 import rospy
 from smach import StateMachine
-from autonomy.msg import StartMachineAction, StartMachineGoal, StartMachineFeedback, StartMachineResult
+from autonomy.msg import StartMachineAction
 import actionlib
 from states import *
 
@@ -21,10 +21,13 @@ class AutonomyMachine:
             
             StateMachine.add('Drive', DriveState(), transitions={'reached_dig_site': 'Dig', 'reached_bin': 'Unload', 'manual': 'Manual'})
             StateMachine.add('Dig', DigState(), transitions={'finished': 'Drive', 'manual': 'Manual'})
-            StateMachine.add('Unload', UnloadState(), transitions={'finished': 'finished', 'manual': 'Manual'})
+            StateMachine.add('Unload', UnloadState(), transitions={'finished': 'Drive', 'manual': 'Manual'})
             StateMachine.add('Manual', ManualState(), transitions={'drive': 'Drive', 'dig': 'Dig', 'unload': 'Unload'})
 
     def ExecuteMachine(self):
+        if not rospy.get_param("/isAutonomous"):
+            rospy.logerr("Tried to start autonomy while isAutonomous is false!")
+            return
         self.mm.execute()
 
     def startMachine_cb(self, goal):
@@ -33,7 +36,5 @@ class AutonomyMachine:
 
 if __name__ == "__main__":
     rospy.init_node("master_machine")
-
     machine = AutonomyMachine()
-    machine.ExecuteMachine()
-    rospy.logwarn("State machine finished!")
+    rospy.spin()

@@ -19,7 +19,6 @@ class InitializePositionState(ExtendedState):
         )
 
     def execute(self, userdata):
-        userdata.current_state = 'Init'
         rospy.logwarn("Initializing position")
         position_sum = np.asarray([0.0, 0.0, 0.0])
         
@@ -43,6 +42,8 @@ class InitializePositionState(ExtendedState):
         # TODO: publish the map -> odom transform based on the initial pose
         rospy.logwarn('Initial Pose Obtained')
         
+        # We don't want to go manual during the initialization process
+        # But once we are done, we can check if remote base was asking to turn autonomous
         if rospy.get_param("/isAutonomous"):
             return "manual"
         

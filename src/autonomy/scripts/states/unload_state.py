@@ -18,4 +18,5 @@ class UnloadState(ExtendedState):
         userdata.current_state = 'Unload'
         self.dump_server.send_goal(DumpGoal())
         self.wait_for_action_result(self.dump_server)
+        userdata.driving_to_site = True
         return 'finished'
