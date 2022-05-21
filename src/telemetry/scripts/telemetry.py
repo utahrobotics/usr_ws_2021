@@ -99,8 +99,7 @@ class LunabaseStream(object):
 		self.dump_client = SimpleActionClient("Dump", DumpAction)
 		self.start_machine_client = SimpleActionClient("start_machine_as", StartMachineAction)
 		
-		sleep(3)
-		timeout = rospy.Duration(1)
+		timeout = rospy.Duration(3)
 		self.manual_home_client.wait_for_server(timeout)
 		self.dump_client.wait_for_server(timeout)
 		self.start_machine_client.wait_for_server(timeout)
