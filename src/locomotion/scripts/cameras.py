@@ -26,15 +26,19 @@ class CamCtlr:
 		self.CamPulse = 595  # 150-600
 		self.ArmPulse = servo_min  # 150-600
 		self.LastJoy = None
+
 		self.camAnglePub = rospy.Publisher('cam_angle', Int32, queue_size=1)
 		self.sensorArmAnglePub = rospy.Publisher('sensor_arm_angle', Int32, queue_size=1)
+
 		rospy.Subscriber("telemetry_joy", Joy, self.joyCallback, queue_size=1)
+
 		self.setCamAngleServer = actionlib.SimpleActionServer(
             "set_cam_angle_as", SetAngleAction, execute_cb=self.setCamAngle_cb, auto_start=False)
 		self.setCamAngleServer.start()
 		self.setArmAngleServer = actionlib.SimpleActionServer(
             "set_arm_angle_as", SetAngleAction, execute_cb=self.setArmAngle_cb, auto_start=False)
 		self.setArmAngleServer.start()
+
 		r = rospy.Rate(100)
 		while not rospy.is_shutdown():
 			if not rospy.get_param("/isAutonomous") and not self.LastJoy == None:

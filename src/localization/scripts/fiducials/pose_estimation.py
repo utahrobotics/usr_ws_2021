@@ -16,6 +16,7 @@ from geometry_msgs.msg import PoseStamped, Point, Quaternion
 
 pose1Pub = rospy.Publisher('sensors/fiducial/pose1', PoseStamped, queue_size=10)
 pose3Pub = rospy.Publisher('sensors/fiducial/pose3', PoseStamped, queue_size=10)
+br = tf.TransformBroadcaster()
 
 
 def pose_esitmation(frame, aruco_dict_type, matrix_coefficients, distortion_coefficients):
@@ -66,6 +67,7 @@ def pose_esitmation(frame, aruco_dict_type, matrix_coefficients, distortion_coef
             pose.pose.position.z = tvec[0][0][2]
 
             quaternion = tf.transformations.quaternion_from_euler(rvec[0][0][0], rvec[0][0][1], rvec[0][0][2])
+            inverse_quaternion = tf.transformations.quaternion_from_euler(-rvec[0][0][0], -rvec[0][0][1], -rvec[0][0][2])
             #type(pose) = geometry_msgs.msg.Pose
             pose.pose.orientation.x = quaternion[0]
             pose.pose.orientation.y = quaternion[1]
@@ -74,8 +76,10 @@ def pose_esitmation(frame, aruco_dict_type, matrix_coefficients, distortion_coef
             
             if id == 1:
                 pose1Pub.publish(pose)
+                br.sendTransform((-tvec[0][0][0], -tvec[0][0][1], -tvec[0][0][2]), inverse_quaternion, rospy.Time.now(), "aruco1_pose_est", "aruco1")
             elif id == 3:
                 pose3Pub.publish(pose)
+                br.sendTransform((-tvec[0][0][0], -tvec[0][0][1], -tvec[0][0][2]), inverse_quaternion, rospy.Time.now(), "aruco3_pose_est", "aruco3")
 
 
     return frame

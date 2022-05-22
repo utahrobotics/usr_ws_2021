@@ -22,7 +22,12 @@
 
     <node name="pozyx" pkg="localization" type="Pozyx.py" />
 
+    <node name="tf_static" pkg="robot_tf" type="static_transforms.py" />
+
+    <include file="$(find autonomy)/launch/localization.launch" />
+
     <include file="$(find autonomy)/launch/realsense.launch" />
+
     
     <node type="rviz" name="rviz" pkg="rviz" args="-d $(find launch)/rviz/rviz_config.rviz" />
 

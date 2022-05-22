@@ -69,8 +69,6 @@ class DrivingSubscriber:
         self.drum_subscriber_ = rospy.Subscriber('drum_vel', Float32, self.drum_drive_callback,queue_size=1)
         self.arm_subscriber_ = rospy.Subscriber('arm_vel', Float32, self.arm_callback,queue_size=1)
 
-        self.arm_angle_pub = rospy.Publisher('/sensors/angleSensor/angle', Float32, self.angle_callback, queue_size=10)
-
         self.vesc = VESC(serial_port=serial_port)
 
         self.sensor = AngleSensor()

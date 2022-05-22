@@ -61,6 +61,8 @@ ADS1x15_CONFIG_COMP_QUE = {
 }
 ADS1x15_CONFIG_COMP_QUE_DISABLE = 0x0003
 
+arm_length = 
+drum_radius = 
 
 class AngleSensor:
 	def __init__(self, gain=2/3, bus=1):
@@ -178,8 +180,13 @@ if __name__ == "__main__":
 	# plt.show()
 
 	pub = rospy.Publisher('/sensors/angleSensor/angle', Float32 , queue_size=10)
+	arm_depth_pub = rospy.Publisher('/sensors/angleSensor/depth', Float32, queue_size=10)
 	rospy.init_node('angleSensor')
 	r = rospy.Rate(10) # 10hz
 	while not rospy.is_shutdown():
-		pub.publish(sensor.computeDegrees(5, sensor.computeVolts(sensor.get_last_result())))
+		angle = sensor.computeDegrees(5, sensor.computeVolts(sensor.get_last_result()))
+		theta = angle - 180
+		depth = arm_length*math.tan(theta) - drum_radius
+		pub.publish(angle)
+		arm_depth_pub.publish(depth)
 		r.sleep()
