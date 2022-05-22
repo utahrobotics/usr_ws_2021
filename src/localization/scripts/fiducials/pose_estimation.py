@@ -43,6 +43,7 @@ def pose_esitmation(frame, aruco_dict_type, matrix_coefficients, distortion_coef
         for i in range(0, len(ids)):
             id = ids[i]
             # Estimate pose of each marker and return the values rvec and tvec---(different from those of camera coefficients)
+            #TODO: edit fiducial length to reflect reality
             rvec, tvec, markerPoints = cv2.aruco.estimatePoseSingleMarkers(corners[i], 0.02, matrix_coefficients,
                                                                        distortion_coefficients)
             print()

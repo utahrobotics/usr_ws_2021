@@ -1,5 +1,5 @@
 <launch>
-  <node pkg="robot_localization" type="ekf_localization_node" name="robot_localization_ekf_node_map" clear_params="true">
+  <node pkg="robot_localization" type="ekf_localization_node" name="global_localization" clear_params="true">
     <param name="frequency" value="10" />
     <param name="sensor_timeout" value="0.2" />
     <param name="two_d_mode" value="true" />
@@ -33,6 +33,24 @@
      false, false, false,
      false, false, false,
      false, false, false]</rosparam>
+
+     <param name="imu0" value="sensors/pozyx/imu" />
+     <rosparam param="imu0_config">
+      [false, false, false,
+       false, false, false,
+       false, false, false,
+       false, false, true,
+       true, true, false]</rosparam>
+    <remap from="odometry/filtered" to="odometry/filtered_map" />
+  </node>
+
+  <node pkg="robot_localization" type="ekf_localization_node" name="odom_localization" clear_params="true">
+    <param name="frequency" value="10" />
+    <param name="sensor_timeout" value="0.2" />
+    <param name="two_d_mode" value="true" />
+    <param name="publish_tf" value="true" />
+    <param name="base_link_frame" value="base_link" />
+    <param name="world_frame" value="odom" />
 
      <param name="imu0" value="sensors/pozyx/imu" />
      <rosparam param="imu0_config">
