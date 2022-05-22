@@ -11,9 +11,6 @@ class ManualState(ExtendedState):
 			output_keys=['current_state']
 		)
 	
-	def autonomy_callback(self, msg):
-		ExtendedState.autonomy_callback(self, msg)
-	
 	def execute(self, userdata):
 		if rospy.get_param("/isAutonomous"):
 			rospy.logwarn("Entered Manual State while autonomous! Ignoring...")
