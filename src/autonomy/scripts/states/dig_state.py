@@ -10,8 +10,8 @@ class DigState(ExtendedState):
 		ExtendedState.__init__(
 			self,
 			outcomes=['finished', 'manual'],
-			input_keys=["driving_to_site", "action_client"],
-			output_keys=["driving_to_site", "action_client"]
+			input_keys=["driving_to_site"],
+			output_keys=["driving_to_site"]
 		)
 	
 	def execute(self, userdata):

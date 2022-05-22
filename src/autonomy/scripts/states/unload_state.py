@@ -10,13 +10,12 @@ class UnloadState(ExtendedState):
 		ExtendedState.__init__(
 			self,
 			outcomes=['finished', 'manual'],
-			input_keys=["action_client"],
-			output_keys=["action_client"]
 		)
 	
 	def execute(self, userdata):
 		userdata.current_state = 'Unload'
 		self.dump_server.send_goal(DumpGoal())
-		self.wait_for_action_result(self.dump_server)
+		if self.wait_for_action_result(self.dump_server):
+			return 'manual'
 		userdata.driving_to_site = True
 		return 'finished'
