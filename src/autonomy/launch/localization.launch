@@ -8,20 +8,39 @@
     <param name="odom_frame" value="odom" />
     <param name="base_link_frame" value="base_link" />
     <param name="world_frame" value="map" />
+
     <param name="pose0" value="sensors/pozyx/pose" />
     <rosparam param="pose0_config">
-    [true, true, true,
+    [true, true, false,
      false, false, false,
      false, false, false,
      false, false, false,
      false, false, false]</rosparam>
      <param name="imu0" value="sensors/pozyx/imu" />
+
+    <param name="pose1" value="sensors/fiducial/pose1" />
+    <rosparam param="pose1_config">
+    [true, true, flase,
+     false, false, true,
+     false, false, false,
+     false, false, false,
+     false, false, false]</rosparam>
+
+    <param name="pose3" value="sensors/fiducial/pose3" />
+    <rosparam param="pose3_config">
+    [true, true, true,
+     false, false, true,
+     false, false, false,
+     false, false, false,
+     false, false, false]</rosparam>
+
+     <param name="imu0" value="sensors/pozyx/imu" />
      <rosparam param="imu0_config">
       [false, false, false,
        false, false, false,
        false, false, false,
-       true, true, true,
-       false, false, false]</rosparam>
+       false, false, true,
+       true, true, false]</rosparam>
     <remap from="odometry/filtered" to="odometry/filtered_map" />
   </node>
 </launch>
