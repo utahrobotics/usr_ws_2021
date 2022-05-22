@@ -1,10 +1,4 @@
 <launch>
-  <!--<remap from="/camera/image_raw/compressed" to="camera/compressed" />
-  <node pkg="cv_camera" type="cv_camera_node" name="camera">
-    <param name="file" value="/dev/realsense_rgb" />
-  </node>-->
-
-
   <remap from="/usb_cam/image_raw/compressed" to="/camera/compressed" />
   <node name="usb_cam" pkg="usb_cam" type="usb_cam_node" output="screen" >
     <param name="video_device" value="/dev/video0" />
@@ -14,10 +8,8 @@
     <param name="camera_frame_id" value="usb_cam" />
     <param name="io_method" value="mmap"/>
   </node>
-  <node name="image_view" pkg="image_view" type="image_view" respawn="false" output="screen">
-    <remap from="image" to="/usb_cam/image_raw"/>
+  <!--<node name="image_view" pkg="image_view" type="image_view" respawn="false" output="screen">
+    <remap from="image" to="camera"/>
     <param name="autosize" value="true" />
-  </node>
-
-  <include file="$(find aruco_detect)/launch/aruco_detect.launch" />
+  </node>-->
 </launch>
