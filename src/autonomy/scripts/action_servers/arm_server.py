@@ -1,6 +1,6 @@
 import rospy
 from abstract_server import AbstractActionServer
-from autonomy.msg import DumpAction, DigAction
+from autonomy.msg import DumpAction, DigAction, LiftArmAction, LiftArmGoal
 from std_msgs.msg import Float32, Twist
 from locomotion.msg import SteerAndThrottle
 
@@ -12,6 +12,7 @@ POLLING_DELAY = 0.1
 POLLING_RATE = rospy.Duration(POLLING_DELAY)
 
 ARM_DEPTH = 0.0
+ARM_ANGLE = 0.0
 
 
 def update_arm_depth(msg):
@@ -19,7 +20,13 @@ def update_arm_depth(msg):
 	ARM_DEPTH = msg.data
 
 
+def update_arm_angle(msg):
+	global ARM_ANGLE
+	ARM_ANGLE = msg.data
+
+
 rospy.Subscriber('/sensors/angleSensor/depth', Float32, update_arm_depth)
+rospy.Subscriber("/sensors/angleSensor/angle", Float32, update_arm_angle)
 
 
 def safe_sleep(duration, rate=10):
@@ -85,6 +92,21 @@ def raise_arm_to_depth(depth):
 	return autonomy != rospy.get_param("/isAutonomous")
 
 
+def raise_arm_to_angle(angle):
+	msg = Float32(-1)
+	autonomy = rospy.get_param("/isAutonomous")
+	
+	while ARM_ANGLE < angle:
+		ARM_SPEED_PUB.publish(msg)
+		POLLING_RATE.sleep()
+		
+		if autonomy != rospy.get_param("/isAutonomous"):
+			break
+	
+	ARM_SPEED_PUB.publish(Float32(0))
+	return autonomy != rospy.get_param("/isAutonomous")
+
+
 def spin_drum_for(duration, speed):
 	DRUM_SPEED_PUB.publish(Float32(speed))
 	if safe_sleep(duration):
@@ -92,6 +114,14 @@ def spin_drum_for(duration, speed):
 		return True
 	DRUM_SPEED_PUB.publish(Float32(0))
 	return False
+
+
+class MoveArm(AbstractActionServer):
+	def __init__(self):
+		AbstractActionServer.__init__(self, "lift_arm", LiftArmAction)
+	
+	def execute(self, goal):
+		raise_arm_to_angle(goal.angle)
 
 
 class DumpServer(AbstractActionServer):
