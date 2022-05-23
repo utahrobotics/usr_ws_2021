@@ -26,7 +26,6 @@ class DriveState(ExtendedState):
 	
 	def execute(self, userdata):
 		userdata.current_state = 'Drive'
-		# TODO: Use move_base
 		if userdata.driving_to_site:
 			if self._move_to(1.5, 5):
 				return 'manual'
