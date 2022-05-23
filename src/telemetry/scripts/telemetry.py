@@ -13,7 +13,7 @@ from motors.msg import HomeMotorManualAction, HomeMotorManualGoal, FakeInitActio
 from autonomy.msg import StartMachineAction, StartMachineGoal, StartMachineFeedback, StartMachineResult
 from actionlib import SimpleActionClient
 from rosgraph_msgs.msg import Log
-from autonomy.msg import DumpAction, DumpGoal
+from autonomy.msg import DumpAction, DumpGoal, DigAction, DigGoal
 import roslaunch
 import tf
 from geometry_msgs.msg import Pose, PoseWithCovariance, TwistStamped, Twist
@@ -39,6 +39,7 @@ class MsgHeaders(IntEnum):
 	VID_STREAM = 14
 	SEND_STREAM = 15
 	DONT_SEND_STREAM = 16
+	DIG = 17
 
 
 def pub_joy(pub, joy):
@@ -97,6 +98,7 @@ class LunabaseStream(object):
 		self.fake_init_client = SimpleActionClient("fake_init_as", FakeInitAction)
 		self.manual_home_client = SimpleActionClient("home_motor_manual_as", HomeMotorManualAction)
 		self.dump_client = SimpleActionClient("Dump", DumpAction)
+		self.dig_client = SimpleActionClient("Dig", DigAction)
 		self.start_machine_client = SimpleActionClient("start_machine_as", StartMachineAction)
 		
 		timeout = rospy.Duration(3)
@@ -274,6 +276,17 @@ class LunabaseStream(object):
 			rospy.set_param("/isAutonomous", True)
 			self.tcp_stream.sendall(bytearray([MsgHeaders.INITIATE_AUTONOMY_MACHINE]))
 			self.dump_client.send_goal(DumpGoal())
+			self.dump_client.wait_for_result()
+			self.tcp_stream.sendall(bytearray([MsgHeaders.MAKE_MANUAL]))
+			rospy.set_param("/isAutonomous", False)
+		
+		elif header == MsgHeaders.DIG:
+			if rospy.get_param("/isAutonomous"):
+				rospy.logwarn("Cannot dig while autonomous")
+				return
+			rospy.set_param("/isAutonomous", True)
+			self.tcp_stream.sendall(bytearray([MsgHeaders.INITIATE_AUTONOMY_MACHINE]))
+			self.dig_client.send_goal(DigGoal())
 			self.dump_client.wait_for_result()
 			self.tcp_stream.sendall(bytearray([MsgHeaders.MAKE_MANUAL]))
 			rospy.set_param("/isAutonomous", False)
