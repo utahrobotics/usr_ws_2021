@@ -17,6 +17,7 @@ class DigState(ExtendedState):
 	def execute(self, userdata):
 		userdata.current_state = 'Dig'
 		self._dig_client.send_goal(DigGoal())
-		self.wait_for_action_result(self._dig_client)
+		if self.wait_for_action_result(self._dig_client):
+			return 'manual'
 		userdata.driving_to_site = False
 		return 'finished'

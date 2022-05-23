@@ -2,7 +2,6 @@
 
 import socket as sock
 from struct import pack
-from time import sleep
 
 import rospy
 from enum import IntEnum  # NOTE! Install enum34 with pip
@@ -13,12 +12,12 @@ from motors.msg import HomeMotorManualAction, HomeMotorManualGoal, FakeInitActio
 from autonomy.msg import StartMachineAction, StartMachineGoal, StartMachineFeedback, StartMachineResult
 from actionlib import SimpleActionClient
 from rosgraph_msgs.msg import Log
-from autonomy.msg import DumpAction, DumpGoal
+from autonomy.msg import DumpAction, DumpGoal, DigAction, DigGoal
 import roslaunch
 import tf
 from geometry_msgs.msg import Pose, PoseWithCovariance, TwistStamped, Twist
 
-from serde import serialize_odometry, deserialize_f32, JoyInput
+from serde import serialize_odometry, JoyInput, serialize_f32
 
 
 class MsgHeaders(IntEnum):
@@ -39,6 +38,7 @@ class MsgHeaders(IntEnum):
 	VID_STREAM = 14
 	SEND_STREAM = 15
 	DONT_SEND_STREAM = 16
+	DIG = 17
 
 
 def pub_joy(pub, joy):
@@ -85,18 +85,21 @@ class LunabaseStream(object):
 		self.last_twist = Twist()
 		self.rosout_sub = rospy.Subscriber("rosout", Log, self.rosout_callback, queue_size=10)
 		self.is_sending_rosout = True
+		self.arm_angle_sub = rospy.Subscriber('/sensors/angleSensor/angle', Float32, self.arm_angle_callback)
+		self.arm_angle = 0.0
 		
 		self._is_streaming_vid = True
 		self.webcam_sub = rospy.Subscriber("/camera/compressed", CompressedImage, self.img_callback, queue_size=10)
 		self.frame_id = 0
 
-		self.arm_publish = rospy.Publisher("set_arm_angle", Float32, queue_size=1)
+		# self.arm_publish = rospy.Publisher("set_arm_angle", Float32, queue_size=1)
 		self.joy_publish = rospy.Publisher("telemetry_joy", Joy, queue_size=1)
 		self.autonomy_publish = rospy.Publisher("set_autonomy", Bool, queue_size=10)
 		
 		self.fake_init_client = SimpleActionClient("fake_init_as", FakeInitAction)
 		self.manual_home_client = SimpleActionClient("home_motor_manual_as", HomeMotorManualAction)
 		self.dump_client = SimpleActionClient("Dump", DumpAction)
+		self.dig_client = SimpleActionClient("Dig", DigAction)
 		self.start_machine_client = SimpleActionClient("start_machine_as", StartMachineAction)
 		
 		timeout = rospy.Duration(3)
@@ -161,8 +164,12 @@ class LunabaseStream(object):
 		if not self._connected_to_lunabase or not self.is_sending_rosout: return
 		self.tcp_stream.sendall(bytearray([MsgHeaders.ROSOUT, msg.level]) + bytes(msg.msg))
 	
+	def arm_angle_callback(self, msg):
+		self.arm_angle = msg.data
+	
 	def send_odom(self, odom):
 		self.udp_stream.sendall(bytearray([MsgHeaders.ODOMETRY]) + serialize_odometry(odom))
+		self.udp_stream.sendall(bytearray([MsgHeaders.ARM_ANGLE]) + serialize_f32(self.arm_angle))
 	
 	def poll(self, delta):
 		if self._listening_for_broadcast:
@@ -220,7 +227,8 @@ class LunabaseStream(object):
 			self.tcp_stream.sendall(bytearray([MsgHeaders.PING]))
 		
 		elif header == MsgHeaders.ARM_ANGLE:
-			self.arm_publish.publish(deserialize_f32(msg)[0])
+			rospy.logwarn("Unimplemented arm angle header!")
+			# self.arm_publish.publish(deserialize_f32(msg)[0])
 		
 		elif header == MsgHeaders.JOY_AXIS:
 			if rospy.get_param("/isAutonomous"):
@@ -274,6 +282,17 @@ class LunabaseStream(object):
 			rospy.set_param("/isAutonomous", True)
 			self.tcp_stream.sendall(bytearray([MsgHeaders.INITIATE_AUTONOMY_MACHINE]))
 			self.dump_client.send_goal(DumpGoal())
+			self.dump_client.wait_for_result()
+			self.tcp_stream.sendall(bytearray([MsgHeaders.MAKE_MANUAL]))
+			rospy.set_param("/isAutonomous", False)
+		
+		elif header == MsgHeaders.DIG:
+			if rospy.get_param("/isAutonomous"):
+				rospy.logwarn("Cannot dig while autonomous")
+				return
+			rospy.set_param("/isAutonomous", True)
+			self.tcp_stream.sendall(bytearray([MsgHeaders.INITIATE_AUTONOMY_MACHINE]))
+			self.dig_client.send_goal(DigGoal())
 			self.dump_client.wait_for_result()
 			self.tcp_stream.sendall(bytearray([MsgHeaders.MAKE_MANUAL]))
 			rospy.set_param("/isAutonomous", False)

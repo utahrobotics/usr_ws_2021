@@ -174,14 +174,15 @@ if __name__ == "__main__":
 	# ani = FuncAnimation(fig, animate, interval=10)
 	# plt.show()
 
-	pub = rospy.Publisher('/sensors/angleSensor/angle', Float32 , queue_size=10)
+	pub = rospy.Publisher('/sensors/angleSensor/angle', Float32, queue_size=10)
 	arm_depth_pub = rospy.Publisher('/sensors/angleSensor/depth', Float32, queue_size=10)
 	rospy.init_node('angleSensor')
 	r = rospy.Rate(10) # 10hz
+	
 	while not rospy.is_shutdown():
 		angle = sensor.computeDegrees(5, sensor.computeVolts(sensor.get_last_result()))
 		theta = angle - 180
-		depth = arm_length*math.tan(theta) - drum_radius
+		depth = arm_length*math.tan(theta) - drum_radius		# TODO: Add offset
 		pub.publish(angle)
 		arm_depth_pub.publish(depth)
 		r.sleep()

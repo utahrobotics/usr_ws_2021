@@ -26,11 +26,10 @@ class DriveState(ExtendedState):
 	
 	def execute(self, userdata):
 		userdata.current_state = 'Drive'
-		# TODO: Use move_base
 		if userdata.driving_to_site:
-			if self._move_to(1.5, 5):
+			if self._move_to(1, 5.64):
 				return 'manual'
-		elif self._move_to(1.5, 1.5):
+		elif self._move_to(0, 1.1):
 			return 'manual'
 		rospy.logwarn('Drove to bin')
 		return 'reached_bin'
