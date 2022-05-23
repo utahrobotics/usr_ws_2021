@@ -29,9 +29,9 @@ class Servos:
 
     def cam_callback(self, msg):
     	camAng = msg.data
-        angle = ((ppm - servo_max) / (servo_max - servo_min) * (angle_max-angle_min)) + angle_min
+        angle = ((camAng - servo_max) / (servo_max - servo_min) * (angle_max-angle_min)) + angle_min
 	#TODO: get accurate translation measurements
-	br.sendTransform((0.1, 0.1, 0.4), tf.transformations.quaternion_from_euler(0,0,angle),
+	self.br.sendTransform((0.1, 0.1, 0.4), tf.transformations.quaternion_from_euler(0,0,angle),
 				rospy.Time.now(), "servo_link", "base_link")
 	self.pwm.set_pwm(7, 0, camAng)
     	
