@@ -1,9 +1,10 @@
+#!/usr/bin/env python
 '''
 Sample Usage:-
 python pose_estimation.py --K_Matrix calibration_matrix.npy --D_Coeff distortion_coefficients.npy --type DICT_5X5_100
 '''
 
-
+from rospkg import RosPack
 import numpy as np
 import cv2
 import sys
@@ -12,12 +13,13 @@ import argparse
 import time
 import rospy
 import tf
+import os
 from geometry_msgs.msg import PoseStamped, Point, Quaternion
 
 pose1Pub = rospy.Publisher('sensors/fiducial/pose1', PoseStamped, queue_size=10)
-pose3Pub = rospy.Publisher('sensors/fiducial/pose3', PoseStamped, queue_size=10)
+pose2Pub = rospy.Publisher('sensors/fiducial/pose2', PoseStamped, queue_size=10)
 br = tf.TransformBroadcaster()
-
+rp = RosPack()
 
 def pose_esitmation(frame, aruco_dict_type, matrix_coefficients, distortion_coefficients):
 
@@ -45,7 +47,7 @@ def pose_esitmation(frame, aruco_dict_type, matrix_coefficients, distortion_coef
             id = ids[i]
             # Estimate pose of each marker and return the values rvec and tvec---(different from those of camera coefficients)
             #TODO: edit fiducial length to reflect reality
-            rvec, tvec, markerPoints = cv2.aruco.estimatePoseSingleMarkers(corners[i], 0.02, matrix_coefficients,
+            rvec, tvec, markerPoints = cv2.aruco.estimatePoseSingleMarkers(corners[i], 0.053, matrix_coefficients,
                                                                        distortion_coefficients)
             print()
 	    print(rvec)
@@ -62,24 +64,29 @@ def pose_esitmation(frame, aruco_dict_type, matrix_coefficients, distortion_coef
             #TODO: update the frame_id to the camera
             pose.header.frame_id = "map"
 
-            pose.pose.position.x = tvec[0][0][0]
-            pose.pose.position.y = tvec[0][0][1]
+            pose.pose.position.x = tvec[0][0][1]
+            pose.pose.position.y = tvec[0][0][0]
             pose.pose.position.z = tvec[0][0][2]
 
             quaternion = tf.transformations.quaternion_from_euler(rvec[0][0][0], rvec[0][0][1], rvec[0][0][2])
-            inverse_quaternion = tf.transformations.quaternion_from_euler(-rvec[0][0][0], -rvec[0][0][1], -rvec[0][0][2])
+            inverse_quaternion = tf.transformations.quaternion_from_euler(0, 0, -rvec[0][0][2])
             #type(pose) = geometry_msgs.msg.Pose
             pose.pose.orientation.x = quaternion[0]
             pose.pose.orientation.y = quaternion[1]
             pose.pose.orientation.z = quaternion[2]
             pose.pose.orientation.w = quaternion[3]
             
+            print(id)
+
+            aruco1_offset = -0.25
+            aruco2_offset = 0.25
+
             if id == 1:
                 pose1Pub.publish(pose)
-                br.sendTransform((-tvec[0][0][0], -tvec[0][0][1], -tvec[0][0][2]), inverse_quaternion, rospy.Time.now(), "aruco1_pose_est", "aruco1")
-            elif id == 3:
-                pose3Pub.publish(pose)
-                br.sendTransform((-tvec[0][0][0], -tvec[0][0][1], -tvec[0][0][2]), inverse_quaternion, rospy.Time.now(), "aruco3_pose_est", "aruco3")
+                br.sendTransform((tvec[0][0][2], -tvec[0][0][0] + aruco1_offset, -tvec[0][0][1]), inverse_quaternion, rospy.Time.now(), "aruco1_pose_est", "aruco1")
+            elif id == 2:
+                pose2Pub.publish(pose)
+                br.sendTransform((tvec[0][0][2], -tvec[0][0][0] + aruco2_offset, -tvec[0][0][1]), inverse_quaternion, rospy.Time.now(), "aruco3_pose_est", "aruco3")
 
 
     return frame
@@ -89,8 +96,9 @@ if __name__ == '__main__':
     type = "DICT_5X5_100"
 
     aruco_dict_type = ARUCO_DICT[type]
-    calibration_matrix_path = "calibration_matrix.npy"
-    distortion_coefficients_path = "distortion_coefficients.npy"
+    path = rp.get_path('localization')
+    calibration_matrix_path = os.path.join(path, "scripts/fiducials/calibration_matrix.npy")
+    distortion_coefficients_path = os.path.join(path, "scripts/fiducials/distortion_coefficients.npy")
     
     k = np.load(calibration_matrix_path)
     d = np.load(distortion_coefficients_path)

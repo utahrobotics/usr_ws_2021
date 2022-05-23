@@ -18,18 +18,20 @@
 	<node pkg="locomotion" type="digging.py" name="digging" />
 	<node pkg="motors" type="digger_motor_controller.py" name="brushed"/>
 
-    <node name="map_server" pkg="map_server" type="map_server" args="$(find maps)/arena.yaml" />
+    	<node name="map_server" pkg="map_server" type="map_server" args="$(find maps)/arena.yaml" />
 
-    <node name="pozyx" pkg="localization" type="Pozyx.py" />
+	<node name="pozyx" pkg="localization" type="Pozyx.py" />
 
-    <node name="tf_static" pkg="robot_tf" type="static_transforms.py" />
+	<node name="fiducials" pkg="localization" type="pose_estimation.py" output="screen" />
 
-    <include file="$(find autonomy)/launch/localization.launch" />
+	<node name="tf_static" pkg="robot_tf" type="static_transforms.py" />
 
-    <include file="$(find autonomy)/launch/realsense.launch" />
+	<include file="$(find autonomy)/launch/localization.launch" />
+
+   	<include file="$(find autonomy)/launch/realsense.launch" />
 
     
-    <node type="rviz" name="rviz" pkg="rviz" args="-d $(find launch)/rviz/rviz_config.rviz" />
+	<node type="rviz" name="rviz" pkg="rviz" args="-d $(find launch)/rviz/rviz_config.rviz" />
 
 </launch>
 

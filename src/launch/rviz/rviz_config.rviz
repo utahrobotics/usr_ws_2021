@@ -100,6 +100,8 @@ Visualization Manager:
           Value: true
         aruco3:
           Value: true
+        aruco3_pose_est:
+          Value: true
         base_link:
           Value: true
         camera_link:
@@ -118,19 +120,12 @@ Visualization Manager:
       Show Axes: true
       Show Names: true
       Tree:
-        base_link:
-          pozyx_link:
-            {}
         map:
           aruco1:
             {}
           aruco3:
-            {}
-        servo_link:
-          camera_link:
-            {}
-          realsense_link:
-            {}
+            aruco3_pose_est:
+              {}
       Update Interval: 0
       Value: true
   Enabled: true
@@ -161,7 +156,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 2.268120765686035
+      Distance: 4.4704813957214355
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -176,10 +171,10 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.5703984498977661
+      Pitch: 1.5697963237762451
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 1.620405912399292
+      Yaw: 0.030406270176172256
     Saved: ~
 Window Geometry:
   Displays:
