@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """
 The Pozyx ready to localize tutorial (c) Pozyx Labs
 Please read the tutorial that accompanies this sketch:
@@ -79,8 +79,11 @@ class ReadyToLocalize(object):
         """Performs positioning and displays/exports the results."""
         position = Coordinates()
         sensors = SensorData()
-        status = self.pozyx.doPositioning(
-            position, self.dimension, self.height, self.algorithm, remote_id=self.remote_id)
+        status = not POZYX_SUCCESS
+        try:
+            	status = self.pozyx.doPositioning(position, self.dimension, self.height, self.algorithm, remote_id=self.remote_id)
+        except:
+            rospy.logerr("naughty positioning")
         if status == POZYX_SUCCESS:
             pose = PoseWithCovarianceStamped()
             pose.header.stamp = rospy.get_rostime()
@@ -93,8 +96,8 @@ class ReadyToLocalize(object):
             else:
                 avg_position = sum(self._current_frames) / len(self._current_frames) / 1000
             
-            pose.pose.pose.position.x = avg_position[0]
-            pose.pose.pose.position.y = avg_position[1]
+            pose.pose.pose.position.x = -avg_position[1]
+            pose.pose.pose.position.y = avg_position[0]
             pose.pose.pose.position.z = avg_position[2]
             self.lastPose = pose
             self.posePub.publish(pose)
@@ -102,12 +105,17 @@ class ReadyToLocalize(object):
         else:
             self.printPublishErrorCode("positioning")
 
-        status = self.pozyx.getAllSensorData(sensors, remote_id=self.remote_id)
+
+        try:
+            status = self.pozyx.getAllSensorData(sensors, remote_id=self.remote_id)
+        except:
+            rospy.logerr("naughty imu")
         if status == POZYX_SUCCESS:
             imuMsg = Imu()
 
             header = Header()
             header.stamp = rospy.Time.now()
+            header.frame_id = "pozyx_link"
 
             angular_velocity = Vector3()
             angular_velocity.x = sensors.angular_vel.x * math.pi / 180.0 #d/s to rad/s
@@ -116,9 +124,9 @@ class ReadyToLocalize(object):
             angular_velocity_covariance = [0, 0, 0, 0, 0, 0, 0, 0, 0]
 
             linear_acceleration = Vector3()
-            linear_acceleration.x = (sensors.linear_acceleration.x/1000.0) * 9.8066 #mg to m/s^2
-            linear_acceleration.y = (sensors.linear_acceleration.y/1000.0) * 9.8066 #mg to m/s^2
-            linear_acceleration.z = (sensors.linear_acceleration.z/1000.0) * 9.8066 #mg to m/s^2
+            linear_acceleration.x = (sensors.acceleration.y/1000.0) * 9.8066 #mg to m/s^2
+            linear_acceleration.y = (sensors.acceleration.x/1000.0) * 9.8066 #mg to m/s^2
+            linear_acceleration.z = -(sensors.acceleration.z/1000.0) * 9.8066 #mg to m/s^2
             linear_acceleration_covariance = [0, 0, 0, 0, 0, 0, 0, 0, 0]
 
             orientation_covariance = [-1, 0, 0, 0, 0, 0, 0, 0, 0]
@@ -147,10 +155,13 @@ class ReadyToLocalize(object):
         error_code = SingleRegister()
         network_id = self.remote_id
         if network_id is None:
-            self.pozyx.getErrorCode(error_code)
-            print("LOCAL ERROR %s, %s" % (operation, self.pozyx.getErrorMessage(error_code)))
-            if self.osc_udp_client is not None:
-                self.osc_udp_client.send_message("/error", [operation, 0, error_code[0]])
+            try:
+                self.pozyx.getErrorCode(error_code)
+                print("LOCAL ERROR %s, %s" % (operation, self.pozyx.getErrorMessage(error_code)))
+                if self.osc_udp_client is not None:
+                    self.osc_udp_client.send_message("/error", [operation, 0, error_code[0]])
+            except:
+                print("err getting err code")
             return
         status = self.pozyx.getErrorCode(error_code, self.remote_id)
         if status == POZYX_SUCCESS:

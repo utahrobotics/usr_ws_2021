@@ -101,7 +101,9 @@ if __name__ == '__main__':
     
     k = np.load(calibration_matrix_path)
     d = np.load(distortion_coefficients_path)
-
+    
+    path = os.path.realpath('/dev/cam1')
+    print(path)
     video = cv2.VideoCapture(0)
     time.sleep(2.0)
 

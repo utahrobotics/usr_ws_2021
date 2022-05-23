@@ -20,7 +20,7 @@
 
     	<node name="map_server" pkg="map_server" type="map_server" args="$(find maps)/arena.yaml" />
 
-	<node name="pozyx" pkg="localization" type="Pozyx.py" />
+	<node name="pozyx" pkg="localization" type="Pozyx.py" output="screen"/>
 
 	<node name="fiducials" pkg="localization" type="pose_estimation.py" output="screen" />
 
