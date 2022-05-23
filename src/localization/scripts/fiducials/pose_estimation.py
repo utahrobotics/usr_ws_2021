@@ -18,6 +18,8 @@ from geometry_msgs.msg import PoseStamped, Point, Quaternion
 
 pose1Pub = rospy.Publisher('sensors/fiducial/pose1', PoseStamped, queue_size=10)
 pose2Pub = rospy.Publisher('sensors/fiducial/pose2', PoseStamped, queue_size=10)
+aruco1_offset = -0.25
+aruco2_offset = 0.25
 br = tf.TransformBroadcaster()
 rp = RosPack()
 
@@ -64,22 +66,19 @@ def pose_esitmation(frame, aruco_dict_type, matrix_coefficients, distortion_coef
             #TODO: update the frame_id to the camera
             pose.header.frame_id = "map"
 
-            pose.pose.position.x = tvec[0][0][1]
-            pose.pose.position.y = tvec[0][0][0]
-            pose.pose.position.z = tvec[0][0][2]
+            pose.pose.position.x = tvec[0][0][2]
+            pose.pose.position.y = -tvec[0][0][0] + aruco1_offset if id == 1 else aruco2_offset
+            pose.pose.position.z = -tvec[0][0][1]
 
             quaternion = tf.transformations.quaternion_from_euler(rvec[0][0][0], rvec[0][0][1], rvec[0][0][2])
             inverse_quaternion = tf.transformations.quaternion_from_euler(0, 0, -rvec[0][0][2])
             #type(pose) = geometry_msgs.msg.Pose
-            pose.pose.orientation.x = quaternion[0]
-            pose.pose.orientation.y = quaternion[1]
-            pose.pose.orientation.z = quaternion[2]
-            pose.pose.orientation.w = quaternion[3]
+            pose.pose.orientation.x = inverse_quaternion[0]
+            pose.pose.orientation.y = inverse_quaternion[1]
+            pose.pose.orientation.z = inverse_quaternion[2]
+            pose.pose.orientation.w = inverse_quaternion[3]
             
             print(id)
-
-            aruco1_offset = -0.25
-            aruco2_offset = 0.25
 
             if id == 1:
                 pose1Pub.publish(pose)
