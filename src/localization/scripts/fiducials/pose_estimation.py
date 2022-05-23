@@ -7,14 +7,16 @@ python pose_estimation.py --K_Matrix calibration_matrix.npy --D_Coeff distortion
 from rospkg import RosPack
 import numpy as np
 import cv2
-import sys
 from utils import ARUCO_DICT
-import argparse
 import time
 import rospy
 import tf
 import os
 from geometry_msgs.msg import PoseStamped, Point, Quaternion
+from sensor_msgs.msg import CompressedImage
+from std_msgs.msg import Header
+from PIL import Image
+from io import BytesIO
 
 pose1Pub = rospy.Publisher('sensors/fiducial/pose1', PoseStamped, queue_size=10)
 pose2Pub = rospy.Publisher('sensors/fiducial/pose2', PoseStamped, queue_size=10)
@@ -98,6 +100,7 @@ if __name__ == '__main__':
 	path = rp.get_path('localization')
 	calibration_matrix_path = os.path.join(path, "scripts/fiducials/calibration_matrix.npy")
 	distortion_coefficients_path = os.path.join(path, "scripts/fiducials/distortion_coefficients.npy")
+	webcam_publisher = rospy.Publisher("/camera/compressed", CompressedImage, queue_size=10)
 	
 	k = np.load(calibration_matrix_path)
 	d = np.load(distortion_coefficients_path)
@@ -107,6 +110,14 @@ if __name__ == '__main__':
 	
 	while True:
 		ret, frame = video.read()
+		img = Image.fromarray(frame)
+		buf = BytesIO()
+		img.save(buf, "jpeg")
+		buf.seek(0)
+		msg = CompressedImage()
+		msg.header = Header()
+		msg.data = bytearray(buf.read())
+		webcam_publisher.publish(msg)
 		
 		if not ret:
 			break
