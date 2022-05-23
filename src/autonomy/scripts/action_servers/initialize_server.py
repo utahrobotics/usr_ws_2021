@@ -24,13 +24,13 @@ class InitializeServer(AbstractActionServer):
         Should contain ALL the logic to startup and calibrate the bot
         @return: Warning codes (ie. non-fatal errors, fatal ones should be exceptions)
         """
-        self.cam_angle_pub.publish(Int32(650))      # lift servo arm
-        rospy.sleep(10)
-        self.fake_init.send_goal(FakeInitGoal())
+        for _ in range(100):
+            self.cam_angle_pub.publish(Int32(650))      # lift servo arm
+            rospy.sleep(0.1)
         goal = LiftArmGoal()
-        goal.angle = 195.0
+        goal.angle = 220.0
         self.arm_server.send_goal(goal)
-        self.fake_init.wait_for_result()
         self.arm_server.wait_for_result()
+        self.fake_init.send_goal(FakeInitGoal())
+        self.fake_init.wait_for_result()
         rospy.logwarn("Initialized")
-
