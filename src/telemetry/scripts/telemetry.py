@@ -204,7 +204,7 @@ class LunabaseStream(object):
 		if self.joy_timer.elapse(delta):
 			pub_joy(self.joy_publish, self.joy_input)
 		
-		if self.odom_timer.elapse(delta):
+		if self.odom_timer.elapse(delta) and not rospy.get_param("/isAutonomous"):
 			try:
 				origin, rotation = self.tf_listener.lookupTransform("/map", "/base_link", rospy.Time(0))
 				self.send_odom(self._construct_odom(self.last_twist, origin, rotation))
