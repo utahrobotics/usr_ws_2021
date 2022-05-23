@@ -1,0 +1,4 @@
+<launch>
+  <remap from="/sensors/pozyx/imu" to="imu" />
+  <node name="pozyx" pkg="localization" type="Pozyx.py" output="screen"/>
+</launch>

@@ -93,42 +93,35 @@ def pose_estimation(frame, aruco_dict_type, matrix_coefficients, distortion_coef
 
 
 if __name__ == '__main__':
-	rospy.init_node("fiducials")
-	type = "DICT_5X5_100"
-	
-	aruco_dict_type = ARUCO_DICT[type]
-	path = rp.get_path('localization')
-	calibration_matrix_path = os.path.join(path, "scripts/fiducials/calibration_matrix.npy")
-	distortion_coefficients_path = os.path.join(path, "scripts/fiducials/distortion_coefficients.npy")
-	webcam_publisher = rospy.Publisher("/camera/compressed", CompressedImage, queue_size=10)
-	
-	k = np.load(calibration_matrix_path)
-	d = np.load(distortion_coefficients_path)
-	
-	video = cv2.VideoCapture(0)
-	time.sleep(2.0)
-	
-	while True:
-		ret, frame = video.read()
-		img = Image.fromarray(frame)
-		buf = BytesIO()
-		img.save(buf, "jpeg")
-		buf.seek(0)
-		msg = CompressedImage()
-		msg.header = Header()
-		msg.data = bytearray(buf.read())
-		webcam_publisher.publish(msg)
-		
-		if not ret:
-			break
-		
-		output = pose_estimation(frame, aruco_dict_type, k, d)
-		
-		cv2.imshow('Estimated Pose', output)
-		
-		key = cv2.waitKey(1) & 0xFF
-		if key == ord('q'):
-			break
-	
-	video.release()
-	cv2.destroyAllWindows()
+    rospy.init_node("fiducials")
+    type = "DICT_5X5_100"
+
+    aruco_dict_type = ARUCO_DICT[type]
+    path = rp.get_path('localization')
+    calibration_matrix_path = os.path.join(path, "scripts/fiducials/calibration_matrix.npy")
+    distortion_coefficients_path = os.path.join(path, "scripts/fiducials/distortion_coefficients.npy")
+    
+    k = np.load(calibration_matrix_path)
+    d = np.load(distortion_coefficients_path)
+    
+    path = os.path.realpath('/dev/cam1')
+    print(path)
+    video = cv2.VideoCapture(0)
+    time.sleep(2.0)
+
+    while True:
+        ret, frame = video.read()
+
+        if not ret:
+            break
+        
+        output = pose_esitmation(frame, aruco_dict_type, k, d)
+
+        cv2.imshow('Estimated Pose', output)
+
+        key = cv2.waitKey(1) & 0xFF
+        if key == ord('q'):
+            break
+
+    video.release()
+    cv2.destroyAllWindows()
