@@ -153,7 +153,6 @@ class AngleSensor:
 		angle = (output-lower_bound)*slope+57.8
 		return angle
 
-	
 
 if __name__ == "__main__":
 	sensor = AngleSensor()
