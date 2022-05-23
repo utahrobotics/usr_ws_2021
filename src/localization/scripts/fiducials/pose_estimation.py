@@ -111,7 +111,7 @@ if __name__ == '__main__':
 		if not ret:
 			break
 		
-		output = pose_esitmation(frame, aruco_dict_type, k, d)
+		output = pose_estimation(frame, aruco_dict_type, k, d)
 		
 		cv2.imshow('Estimated Pose', output)
 		
