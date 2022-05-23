@@ -2,7 +2,6 @@
 
 import socket as sock
 from struct import pack
-from time import sleep
 
 import rospy
 from enum import IntEnum  # NOTE! Install enum34 with pip
@@ -18,7 +17,7 @@ import roslaunch
 import tf
 from geometry_msgs.msg import Pose, PoseWithCovariance, TwistStamped, Twist
 
-from serde import serialize_odometry, deserialize_f32, JoyInput, serialize_f32
+from serde import serialize_odometry, JoyInput, serialize_f32
 
 
 class MsgHeaders(IntEnum):
