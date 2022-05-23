@@ -3,7 +3,6 @@ from abstract_server import AbstractActionServer
 from autonomy.msg import DumpAction, DigAction
 from std_msgs.msg import Float32, Twist
 from locomotion.msg import SteerAndThrottle
-from time import time as get_time
 
 
 ARM_SPEED_PUB = rospy.Publisher('arm_vel', Float32, queue_size=1)
@@ -23,50 +22,88 @@ def update_arm_depth(msg):
 rospy.Subscriber('/sensors/angleSensor/depth', Float32, update_arm_depth)
 
 
+def safe_sleep(duration, rate=10):
+    """
+    Returns true if autonomy changed during the sleep
+    """
+    autonomy = rospy.get_param("/isAutonomous")
+    polling_delay = 1.0 / rate
+    ros_rate = rospy.Rate(rate)
+    
+    while duration > 0:
+        ros_rate.sleep()
+        duration -= polling_delay
+        
+        if rospy.get_param("/isAutonomous") != autonomy:
+            return True
+    
+    return False
+
+
 def drive_forward_for(duration, speed):
     goal = SteerAndThrottle()
     goal.angles = [90, 90, 90, 90]
     goal.throttles = [speed, speed, speed, speed]
     DRIVE_PUB.publish(goal)
-    rospy.sleep(duration)
     goal = SteerAndThrottle()
     goal.angles = [90, 90, 90, 90]
     goal.throttles = [0, 0, 0, 0]
+    if safe_sleep(duration):
+        DRIVE_PUB.publish(goal)
+        return True
     DRIVE_PUB.publish(goal)
+    return False
 
 
 def lower_arm_to_depth(depth, timeout=0.0):
     handle_timeout = timeout > 0.0
     current_timeout = 0.0
     msg = Float32(1)
+    autonomy = rospy.get_param("/isAutonomous")
+    
     while ARM_DEPTH > depth:
         ARM_SPEED_PUB.publish(msg)
         POLLING_RATE.sleep()
+        
+        if autonomy != rospy.get_param("/isAutonomous"):
+            break
+        
         if handle_timeout:
             current_timeout += POLLING_DELAY
             if current_timeout >= timeout:
                 break
     ARM_SPEED_PUB.publish(Float32(0))
+    return autonomy != rospy.get_param("/isAutonomous")
 
 
 def raise_arm_to_depth(depth, timeout=0.0):
     handle_timeout = timeout > 0.0
     current_timeout = 0.0
     msg = Float32(-1)
+    autonomy = rospy.get_param("/isAutonomous")
+    
     while ARM_DEPTH < depth:
         ARM_SPEED_PUB.publish(msg)
         POLLING_RATE.sleep()
+        
+        if autonomy != rospy.get_param("/isAutonomous"):
+            break
+        
         if handle_timeout:
             current_timeout += POLLING_DELAY
             if current_timeout >= timeout:
                 break
     ARM_SPEED_PUB.publish(Float32(0))
+    return autonomy != rospy.get_param("/isAutonomous")
 
 
 def spin_drum_for(duration, speed):
     DRUM_SPEED_PUB.publish(Float32(speed))
-    rospy.sleep(duration)
+    if safe_sleep(duration):
+        DRUM_SPEED_PUB.publish(Float32(0))
+        return True
     DRUM_SPEED_PUB.publish(Float32(0))
+    return False
 
 
 class DumpServer(AbstractActionServer):
@@ -75,12 +112,12 @@ class DumpServer(AbstractActionServer):
     
     def execute(self, goal):
         # TODO Alignment with fiducials
-        raise_arm_to_depth(0.6)     # raise arm
-        drive_forward_for(4, 1)     # drive forward
-        rospy.sleep(0.3)            # wait to stop shakes
-        spin_drum_for(5, -1)        # unload for 5 secs
-        drive_forward_for(4, -1)    # drive back
-        lower_arm_to_depth(0.3)     # return to neutral
+        if raise_arm_to_depth(0.6): return      # raise arm
+        if drive_forward_for(4, 1): return      # drive forward
+        if safe_sleep(0.3): return              # wait to stop shakes
+        if spin_drum_for(5, -1): return          # unload for 5 secs
+        if drive_forward_for(4, -1): return      # drive back
+        if lower_arm_to_depth(0.3): return       # return to neutral
 
 
 class DigServer(AbstractActionServer):
@@ -92,9 +129,11 @@ class DigServer(AbstractActionServer):
         DEPTH_STEP = 0.2
         for i in range(1, 3):
             DRUM_SPEED_PUB.publish(Float32(1))      # spin up drum
-            lower_arm_to_depth(- i * DEPTH_STEP, self._digging_timeout)     # lower arm to depth
+            if lower_arm_to_depth(- i * DEPTH_STEP, self._digging_timeout):
+                DRUM_SPEED_PUB.publish(Float32(0))      # stop drum
+                return     # lower arm to depth
             DRUM_SPEED_PUB.publish(Float32(0))      # stop drum
-            raise_arm_to_depth(0.2)     # lift arm
-            drive_forward_for(2, 1)     # drive forward for 2 secs
-            spin_drum_for(5, -1)        # unload for 5 secs
-            drive_forward_for(2, -1)    # drive back for 2 secs
+            if raise_arm_to_depth(0.2): return      # lift arm
+            if drive_forward_for(2, 1): return      # drive forward for 2 secs
+            if spin_drum_for(5, -1): return         # unload for 5 secs
+            if drive_forward_for(2, -1): return     # drive back for 2 secs
