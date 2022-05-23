@@ -85,7 +85,6 @@ class DumpServer(AbstractActionServer):
 
 class DigServer(AbstractActionServer):
     def __init__(self):
-        # sensors/angles
         AbstractActionServer.__init__(self, "Dig", DigAction)
         self._digging_timeout = 5.0
     
