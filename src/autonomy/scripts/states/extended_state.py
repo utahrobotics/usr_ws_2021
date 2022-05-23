@@ -81,6 +81,7 @@ class ExtendedState(State):
         while not self.has_autonomy_changed():
             if action_client.get_state() == SimpleGoalState.DONE:
                 return False
+            timer.sleep()
         return True
     
     @abstractmethod
