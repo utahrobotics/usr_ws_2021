@@ -1,7 +1,7 @@
 <launch>
 	<param name="controller_source" value="remote" />
 	<param name="isAutonomous" value="false" />
-	<param name="remote_ip" value="10.17.202.17" />
+	<param name="remote_ip" value="192.168.0.103" />
 	<param name="remote_port" value="42424" />
 	<param name="polling_rate" value="10" />
 
@@ -17,10 +17,11 @@
 
 	<node pkg="locomotion" type="digging.py" name="digging" />
 	<node pkg="motors" type="digger_motor_controller.py" name="brushed"/>
+	<node pkg="motors" type="angle_sense.py" name="angle_sense"/>
 
     	<node name="map_server" pkg="map_server" type="map_server" args="$(find maps)/arena.yaml" />
 
-	<node name="pozyx" pkg="localization" type="Pozyx.py" output="screen"/>
+	<node name="pozyx" pkg="localization" type="Pozyx.py"/>
 
 	<node name="fiducials" pkg="localization" type="pose_estimation.py" output="screen" />
 

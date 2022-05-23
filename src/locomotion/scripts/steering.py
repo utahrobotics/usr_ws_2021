@@ -50,7 +50,7 @@ class LocCtlr:
     def translationControl(self, left_joystickY, right_joystickX):
         self.wheelCenter = [0, 0.5]
         angle = (right_joystickX * 90)
-        angles = [90 - angle, 90 - angle, 90 - angle, 90 - angle]
+        angles = [90 + angle, 90 + angle, 90 + angle, 90 + angle]
         
         vel = left_joystickY
         velocities = [vel, vel, vel, vel]

@@ -67,6 +67,7 @@ class DrivingSubscriber:
         self.last_arm_vel = -1
         #rospy.logwarn("initing")
         self.drum_subscriber_ = rospy.Subscriber('drum_vel', Float32, self.drum_drive_callback,queue_size=1)
+        rospy.Subscriber('/sensors/angleSensor/angle', Float32, self.angle_callback,queue_size=1)
         self.arm_subscriber_ = rospy.Subscriber('arm_vel', Float32, self.arm_callback,queue_size=1)
 
         self.vesc = VESC(serial_port=serial_port)
@@ -79,7 +80,7 @@ class DrivingSubscriber:
 
     def angle_callback(self, msg):
         angle = msg.data
-        latest_angle = angle
+        self.latest_angle = angle
 
 
     def drum_drive_callback(self, msg):
@@ -94,13 +95,12 @@ class DrivingSubscriber:
 
         if self.latest_angle == -1 :
             rospy.logwarn("no angle detected. not moving arm.")
-            return
         
-        if self.latest_angle > self.upper_limit and self.last_arm_vel < msg.data:
+        if self.latest_angle > self.upper_limit and self.last_arm_vel == -1:
             rospy.logwarn("upper limit reached. not moving arm.")
             return
 
-        if self.latest_angle < self.lower_limit and self.last_arm_vel > msg.data:
+        if self.latest_angle < self.lower_limit and self.last_arm_vel == 1:
             rospy.logwarn("lower limit reached. not moving arm.")
             return
 

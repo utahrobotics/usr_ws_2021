@@ -83,7 +83,7 @@ class ReadyToLocalize(object):
         try:
             	status = self.pozyx.doPositioning(position, self.dimension, self.height, self.algorithm, remote_id=self.remote_id)
         except:
-            rospy.logerr("naughty positioning")
+            rospy.loginfo("naughty positioning")
         if status == POZYX_SUCCESS:
             pose = PoseWithCovarianceStamped()
             pose.header.stamp = rospy.get_rostime()
@@ -109,7 +109,7 @@ class ReadyToLocalize(object):
         try:
             status = self.pozyx.getAllSensorData(sensors, remote_id=self.remote_id)
         except:
-            rospy.logerr("naughty imu")
+            rospy.loginfo("naughty imu")
         if status == POZYX_SUCCESS:
             imuMsg = Imu()
 

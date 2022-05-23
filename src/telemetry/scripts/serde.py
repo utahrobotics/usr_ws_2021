@@ -75,19 +75,14 @@ class JoyInput:
 
 def serialize_odometry(odom):
 	return serialize_f32([
-		odom.pose.orientation.x,
-		odom.pose.orientation.y,
-		odom.pose.orientation.z,
-		odom.pose.orientation.w,
-		odom.pose.position.x,
-		odom.pose.position.y,
-		odom.pose.position.z,
-		odom.twist.linear.x,
-		odom.twist.linear.y,
-		odom.twist.linear.z,
-		odom.twist.angular.x,
-		odom.twist.angular.y,
-		odom.twist.angular.z,
+		odom.pose.pose.orientation[0],
+		odom.pose.pose.orientation[1],
+		odom.pose.pose.orientation[2],
+		odom.pose.pose.orientation[3],
+		odom.pose.pose.position[0],
+		odom.pose.pose.position[1],
+		odom.pose.pose.position[2],
+		0,0,0,0,0,0
 	])
 
 

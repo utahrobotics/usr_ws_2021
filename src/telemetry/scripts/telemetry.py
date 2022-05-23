@@ -168,7 +168,7 @@ class LunabaseStream(object):
 		self.arm_angle = msg.data
 	
 	def send_odom(self, odom):
-		self.udp_stream.sendall(bytearray([MsgHeaders.ODOMETRY]) + serialize_odometry(odom))
+		#self.udp_stream.sendall(bytearray([MsgHeaders.ODOMETRY]) + serialize_odometry(odom))
 		self.udp_stream.sendall(bytearray([MsgHeaders.ARM_ANGLE]) + serialize_f32(self.arm_angle))
 	
 	def poll(self, delta):

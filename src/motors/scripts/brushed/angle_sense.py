@@ -178,11 +178,14 @@ if __name__ == "__main__":
 	rospy.init_node('angleSensor')
 	r = rospy.Rate(10) # 10hz
 	NEUTRAL_ARM_HEIGHT = 0.30480
+	print("start")
 	
 	while not rospy.is_shutdown():
 		angle = sensor.computeDegrees(5, sensor.computeVolts(sensor.get_last_result()))
 		theta = angle - 180
 		depth = arm_length*math.tan(theta) - drum_radius + NEUTRAL_ARM_HEIGHT
+		print(angle)
+		print(depth)
 		pub.publish(angle)
 		arm_depth_pub.publish(depth)
 		r.sleep()
