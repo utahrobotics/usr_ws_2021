@@ -204,7 +204,7 @@ class LunabaseStream(object):
 		if self.joy_timer.elapse(delta):
 			pub_joy(self.joy_publish, self.joy_input)
 		
-		if self.odom_timer.elapse(delta):
+		if self.odom_timer.elapse(delta) and not rospy.get_param("/isAutonomous"):
 			try:
 				origin, rotation = self.tf_listener.lookupTransform("/map", "/base_link", rospy.Time(0))
 				self.send_odom(self._construct_odom(self.last_twist, origin, rotation))
@@ -384,11 +384,13 @@ if __name__ == "__main__":
 		raise ValueError("isAutonomous is not set. Please add it")
 
 	if rospy.has_param("remote_ip"):
-		if not rospy.has_param("remote_port"):
-			raise KeyError("There is a remote_ip in the launch file, but not a remote_port. Please add it")
+		if rospy.has_param("remote_port"):
+			port = int(rospy.get_param("remote_port"))
+		else:
+			port = 42420
+			rospy.logwarn("There is a remote_ip in the launch file, but not a remote_port. Defaulting to 42424")
 
 		addr = rospy.get_param("remote_ip")
-		port = rospy.get_param("remote_port")
 		rospy.logwarn("Using direct connection to lunabase at " + addr + ":" + str(port))
 		
 		while True:
@@ -403,9 +405,23 @@ if __name__ == "__main__":
 
 	else:
 		rospy.logwarn("Using broadcasting to discover lunabase")
+		
+		if rospy.has_param("multicast_address"):
+			addr = rospy.get_param("multicast_address")
+		else:
+			rospy.logwarn("multicast_address was not set, defaulting to 224.1.1.1")
+			addr = "224.1.1.1"
+		
+		if rospy.has_param("multicast_port"):
+			port = int(rospy.get_param("multicast_port"))
+		
+		else:
+			rospy.logwarn("multicast_port was not set, defaulting to 42420")
+			port = 42420
+		
 		stream.listen_for_broadcast(
-			rospy.get_param("multicast_address"),
-			int(rospy.get_param("multicast_port"))
+			addr,
+			port
 		)
 
 	polling_rate = rospy.get_param("polling_rate")
