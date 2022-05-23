@@ -18,7 +18,7 @@ import roslaunch
 import tf
 from geometry_msgs.msg import Pose, PoseWithCovariance, TwistStamped, Twist
 
-from serde import serialize_odometry, deserialize_f32, JoyInput
+from serde import serialize_odometry, deserialize_f32, JoyInput, serialize_f32
 
 
 class MsgHeaders(IntEnum):
@@ -86,12 +86,14 @@ class LunabaseStream(object):
 		self.last_twist = Twist()
 		self.rosout_sub = rospy.Subscriber("rosout", Log, self.rosout_callback, queue_size=10)
 		self.is_sending_rosout = True
+		self.arm_angle_sub = rospy.Subscriber('/sensors/angleSensor/angle', Float32, self.arm_angle_callback)
+		self.arm_angle = 0.0
 		
 		self._is_streaming_vid = True
 		self.webcam_sub = rospy.Subscriber("/camera/compressed", CompressedImage, self.img_callback, queue_size=10)
 		self.frame_id = 0
 
-		self.arm_publish = rospy.Publisher("set_arm_angle", Float32, queue_size=1)
+		# self.arm_publish = rospy.Publisher("set_arm_angle", Float32, queue_size=1)
 		self.joy_publish = rospy.Publisher("telemetry_joy", Joy, queue_size=1)
 		self.autonomy_publish = rospy.Publisher("set_autonomy", Bool, queue_size=10)
 		
@@ -163,8 +165,12 @@ class LunabaseStream(object):
 		if not self._connected_to_lunabase or not self.is_sending_rosout: return
 		self.tcp_stream.sendall(bytearray([MsgHeaders.ROSOUT, msg.level]) + bytes(msg.msg))
 	
+	def arm_angle_callback(self, msg):
+		self.arm_angle = msg.data
+	
 	def send_odom(self, odom):
 		self.udp_stream.sendall(bytearray([MsgHeaders.ODOMETRY]) + serialize_odometry(odom))
+		self.udp_stream.sendall(bytearray([MsgHeaders.ARM_ANGLE]) + serialize_f32(self.arm_angle))
 	
 	def poll(self, delta):
 		if self._listening_for_broadcast:
@@ -222,7 +228,8 @@ class LunabaseStream(object):
 			self.tcp_stream.sendall(bytearray([MsgHeaders.PING]))
 		
 		elif header == MsgHeaders.ARM_ANGLE:
-			self.arm_publish.publish(deserialize_f32(msg)[0])
+			rospy.logwarn("Unimplemented arm angle header!")
+			# self.arm_publish.publish(deserialize_f32(msg)[0])
 		
 		elif header == MsgHeaders.JOY_AXIS:
 			if rospy.get_param("/isAutonomous"):
