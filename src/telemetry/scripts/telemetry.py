@@ -9,6 +9,7 @@ from std_msgs.msg import Float32, Header, Bool
 from sensor_msgs.msg import Joy, CompressedImage
 from nav_msgs.msg import Odometry
 from motors.msg import HomeMotorManualAction, HomeMotorManualGoal, FakeInitAction, FakeInitGoal
+from motors.srv import FakeInit
 from autonomy.msg import StartMachineAction, StartMachineGoal, StartMachineFeedback, StartMachineResult
 from actionlib import SimpleActionClient
 from rosgraph_msgs.msg import Log
@@ -96,7 +97,7 @@ class LunabaseStream(object):
 		self.joy_publish = rospy.Publisher("telemetry_joy", Joy, queue_size=1)
 		self.autonomy_publish = rospy.Publisher("set_autonomy", Bool, queue_size=10)
 		
-		self.fake_init_client = SimpleActionClient("fake_init_as", FakeInitAction)
+		#self.fake_init_client = SimpleActionClient("fake_init_as", FakeInitAction)
 		self.manual_home_client = SimpleActionClient("home_motor_manual_as", HomeMotorManualAction)
 		self.dump_client = SimpleActionClient("Dump", DumpAction)
 		self.dig_client = SimpleActionClient("Dig", DigAction)
@@ -303,10 +304,16 @@ class LunabaseStream(object):
 				return
 			rospy.set_param("/isAutonomous", True)
 			self.tcp_stream.sendall(bytearray([MsgHeaders.INITIATE_AUTONOMY_MACHINE]))
-			goal = FakeInitGoal()
-			goal.goal = True
-			self.fake_init_client.send_goal(goal)
-			self.fake_init_client.wait_for_result()
+			rospy.wait_for_service('fake_init')
+			try:
+				fake_init = rospy.ServiceProxy('fake_init', FakeInit)
+				resp1 = fake_init(True)
+			except rospy.ServiceException as e:
+				print("Service call failed: %s"%e)
+			# goal = FakeInitGoal()
+			# goal.goal = True
+			# self.fake_init_client.send_goal(goal)
+			# self.fake_init_client.wait_for_result()
 			self.tcp_stream.sendall(bytearray([MsgHeaders.MAKE_MANUAL]))
 			rospy.set_param("/isAutonomous", False)
 

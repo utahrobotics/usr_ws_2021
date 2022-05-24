@@ -1,7 +1,7 @@
 <launch>
 	<param name="controller_source" value="remote" />
 	<param name="isAutonomous" value="false" />
-	<param name="remote_ip" value="10.17.202.17" />
+	<param name="remote_ip" value="192.168.0.169" />
 	<param name="remote_port" value="42424" />
 	<param name="polling_rate" value="10" />
 

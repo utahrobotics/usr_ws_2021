@@ -18,7 +18,7 @@ import threading
 
 import actionlib
 from motors.msg import HomeMotorManualAction, HomeMotorManualFeedback, HomeMotorManualResult, FakeInitAction, FakeInitFeedback, FakeInitResult
-
+from motors.srv import FakeInit,FakeInitResponse
 from locomotion.msg import SteerAndThrottle
 from sensor_msgs.msg import Joy
 
@@ -79,8 +79,11 @@ class SteeringSubscriber():
         self.a_server = actionlib.SimpleActionServer("home_motor_manual_as", HomeMotorManualAction, execute_cb=self.start_manual_home_cb, auto_start=False)
         self.a_server.start()
 
-        self.fakeInit_as = actionlib.SimpleActionServer("fake_init_as", FakeInitAction, execute_cb=self.fakeInit_cb, auto_start=False)
-        self.fakeInit_as.start()
+        # self.fakeInit_as = actionlib.SimpleActionServer("fake_init_as", FakeInitAction, execute_cb=self.fakeInit_cb, auto_start=False)
+        # self.fakeInit_as.start()
+
+        s = rospy.Service('fake_init', FakeInit, self.stepper_controller.fakeInitMotors)
+        print("Ready to add two ints.")
 
         self.stop_requested = False
         rospy.on_shutdown(self.shutdown)

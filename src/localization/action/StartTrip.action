@@ -1,0 +1,6 @@
+---
+#result definition
+geometry_msgs/PoseWithCovarianceStamped pose
+---
+#feedback
+geometry_msgs/PoseWithCovarianceStamped pose

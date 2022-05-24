@@ -1,0 +1,4 @@
+---
+#result definition
+geometry_msgs/PoseWithCovarianceStamped pose
+---
