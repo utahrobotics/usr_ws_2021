@@ -7,6 +7,7 @@
 
 	<node pkg="telemetry" type="telemetry.py" name="telemetry" />
 	<node pkg="autonomy" type="autonomy_actions.py" name="autonomy_actions" />
+	<node pkg="motors" type="angle_sense.py" name="angleSensor" />
 
 	<node pkg="locomotion" type="steering.py" name="steering" />
 	<node pkg="motors" type="serial_stepper_control.py" name="steppers" />
