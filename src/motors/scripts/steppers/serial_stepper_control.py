@@ -82,7 +82,7 @@ class SteeringSubscriber():
         # self.fakeInit_as = actionlib.SimpleActionServer("fake_init_as", FakeInitAction, execute_cb=self.fakeInit_cb, auto_start=False)
         # self.fakeInit_as.start()
 
-        s = rospy.Service('fake_init', FakeInit, lambda x: self.stepper_controller.fakeInitMotors())
+        s = rospy.Service('fake_init', FakeInit, self.fakeInit_cb)
         print("Ready to add two ints.")
 
         self.stop_requested = False
@@ -132,11 +132,13 @@ class SteeringSubscriber():
         self.a_server.set_succeeded(result)
 
     def fakeInit_cb(self, goal):
-        result = FakeInitResult()
-        if goal.goal:
-            self.stepper_controller.fakeInitMotors()
-        result.success = True
-        self.a_server.set_succeeded(result)
+        rospy.logwarn("fake initing!")
+        self.stepper_controller.fakeInitMotors()
+        # result = FakeInitResult()
+        # if goal.goal:
+        #     self.stepper_controller.fakeInitMotors()
+        # result.success = True
+        # self.a_server.set_succeeded(result)
 
 
 class StepperController():
