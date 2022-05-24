@@ -101,8 +101,8 @@ class SteeringSubscriber():
                 int(msg.angles[3])
             )
     def joyCallback(self, joy):
-        if joy.axes[1]: #stop manual home if y is pressed
-            self.stop_requested = False
+        if joy.buttons[1]: #stop manual home if y is pressed
+            self.stop_requested = True
             #self.stepper_controller.StopManualHome()
             #result = HomeMotorManualResult()
             #result.success = True;
