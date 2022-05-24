@@ -306,6 +306,7 @@ class LunabaseStream(object):
 			self.tcp_stream.sendall(bytearray([MsgHeaders.INITIATE_AUTONOMY_MACHINE]))
 			rospy.wait_for_service('fake_init')
 			try:
+				rospy.logwarn("trying to fake init!")
 				fake_init = rospy.ServiceProxy('fake_init', FakeInit)
 				resp1 = fake_init(True)
 			except rospy.ServiceException as e:
