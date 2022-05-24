@@ -13,7 +13,7 @@ from nav_msgs.msg import Odometry
 from motors.msg import HomeMotorManualAction, HomeMotorManualGoal, FakeInitAction, FakeInitGoal
 from actionlib import SimpleActionClient
 from rosgraph_msgs.msg import Log
-from autonomy.msg import DumpAction, DumpGoal
+from autonomy.msg import DumpAction, DumpGoal, DigAction, DigGoal
 
 
 class MsgHeaders(IntEnum):
@@ -32,6 +32,7 @@ class MsgHeaders(IntEnum):
     DONT_SEND_ROSOUT = 12
     DUMP = 13
     FAKE_INIT = 14
+    DIG = 15
 
 
 JoyInput = NamedTuple('JoyInput', [
@@ -215,6 +216,7 @@ class LunabaseStream(object):
         self.joy_publish = rospy.Publisher("telemetry_joy", Joy, queue_size=1)
         self.autonomy_publish = rospy.Publisher("set_autonomy", Bool, queue_size=10)
         self.manual_home_client = SimpleActionClient("home_motor_manual_as", HomeMotorManualAction)
+        self.dig_client = SimpleActionClient("Dig", DigAction)
         self.dump_client = SimpleActionClient("Dump", DumpAction)
 
         timeout = rospy.Duration(3)
@@ -373,6 +375,7 @@ class LunabaseStream(object):
         elif header == MsgHeaders.DUMP:
             if self.is_autonomous:
                 rospy.logwarn("Cannot dump while autonomous")
+                return
             self.is_autonomous = True
             self.tcp_stream.sendall(bytearray([MsgHeaders.MAKE_AUTONOMOUS]))
             self.dump_client.send_goal(DumpGoal())
@@ -383,12 +386,24 @@ class LunabaseStream(object):
         elif header == MsgHeaders.FAKE_INIT:
             if self.is_autonomous:
                 rospy.logwarn("Cannot fake init while autonomous")
+                return
             self.is_autonomous = True
             self.tcp_stream.sendall(bytearray([MsgHeaders.MAKE_AUTONOMOUS]))
             goal = FakeInitGoal()
             goal.goal = True
             self.fake_init_client.send_goal(goal)
             self.fake_init_client.wait_for_result()
+            self.tcp_stream.sendall(bytearray([MsgHeaders.MAKE_MANUAL]))
+            self.is_autonomous = False
+        
+        elif header == MsgHeaders.DIG:
+            if self.is_autonomous:
+                rospy.logwarn("Cannot dig while autonomous")
+                return
+            self.is_autonomous = True
+            self.tcp_stream.sendall(bytearray([MsgHeaders.MAKE_AUTONOMOUS]))
+            self.dig_client.send_goal(DigGoal())
+            self.dig_client.wait_for_result()
             self.tcp_stream.sendall(bytearray([MsgHeaders.MAKE_MANUAL]))
             self.is_autonomous = False
 

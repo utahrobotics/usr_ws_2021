@@ -1,133 +1,131 @@
 import rospy
 from abstract_server import AbstractActionServer
-from autonomy.msg import MoveArmAction, MoveDiggerAction, MoveArmFeedback, DumpAction
+from autonomy.msg import DigAction
 from std_msgs.msg import Float32, Twist
-from actionlib import SimpleActionClient
-from locomotion.msg import SetSpeedGoal, SetSpeedAction
-from math import pi
-from time import sleep
+from locomotion.msg import SteerAndThrottle
+
+ARM_SPEED_PUB = rospy.Publisher('arm_vel', Float32, queue_size=1)
+DRUM_SPEED_PUB = rospy.Publisher('drum_vel', Float32, queue_size=1)
+DRIVE_PUB = rospy.Publisher('locomotion', SteerAndThrottle, queue_size=5)
+POLLING_DELAY = 0.1
+POLLING_RATE = rospy.Duration(POLLING_DELAY)
+
+ARM_DEPTH = 0.0
+ARM_ANGLE = 0.0
 
 
-ARM_EXTENSION_ANGLE = pi / 6
+def update_arm_depth(msg):
+	global ARM_DEPTH
+	ARM_DEPTH = msg.data
 
 
-class MoveArmServer(AbstractActionServer):
-    def __init__(self):
-        AbstractActionServer.__init__(self, 'move_arm', MoveArmAction)
-        self.arm_vel_pub = rospy.Publisher('arm_vel', Float32, queue_size=1)
-        self.arm_angle_sub = rospy.Subscriber('/sensors/angleSensor/angle', Float32, self.set_arm_angle, queue_size=1)
-        self.arm_angle = 0.0
-
-    def set_arm_angle(self, angle):
-        self.arm_angle = angle
-
-    def execute(self, goal):
-        r = rospy.Rate(20)
-        if goal.extend:
-            self.arm_vel_pub.publish(Float32(1))        # 1 radian per second?
-            #while self.arm_angle < ARM_EXTENSION_ANGLE:
-                #r.sleep()
-                #self.publish_feedback(MoveArmFeedback(self.arm_angle / ARM_EXTENSION_ANGLE))
-            rospy.sleep(3)      # tmp until the arm sensor works
-            self.arm_vel_pub.publish(Float32(0))
-        else:
-            self.arm_vel_pub.publish(Float32(-1))        # 1 radian per second?
-            # this loop also only works if the arm sensor works
-            while self.arm_angle > 0:
-                r.sleep()
-                self.publish_feedback(MoveArmFeedback(1 - self.arm_angle / ARM_EXTENSION_ANGLE))
-            self.arm_vel_pub.publish(Float32(0))
-
-        if goal.extend:
-            rospy.logwarn("Extended Arm")
-        else:
-            rospy.logwarn("Retracted Arm")
-
-        return 0
+def update_arm_angle(msg):
+	global ARM_ANGLE
+	ARM_ANGLE = msg.data
 
 
-class MoveDiggerServer(AbstractActionServer):
-    def __init__(self):
-        self.drum_vel_pub = rospy.Publisher('drum_vel', Float32, queue_size=1)
-        AbstractActionServer.__init__(self, 'move_digger', MoveDiggerAction)
-
-    def execute(self, goal):
-        if goal.digging:
-            self.drum_vel_pub.publish(Float32(1))        # 1 radian per second?
-        else:
-            self.drum_vel_pub.publish(Float32(-1))        # reverse 1 radian per second?
-
-        r = rospy.Rate(10)
-        count = int(round(goal.duration * 10))
-        for i in range(count):
-            r.sleep()
-            self.publish_feedback(i / count)
-
-        self.drum_vel_pub.publish(Float32(0))
-        if goal.digging:
-            rospy.logwarn("Dug")
-        else:
-            rospy.logwarn("Unloaded")
-
-        return 0
+rospy.Subscriber('/sensors/angleSensor/depth', Float32, update_arm_depth)
+rospy.Subscriber("/sensors/angleSensor/angle", Float32, update_arm_angle)
 
 
-class DumpServer(AbstractActionServer):
-    def __init__(self):
-        self._move_arm = SimpleActionClient('set_arm_speed_as', SetSpeedAction)
-        self._move_drum = SimpleActionClient('set_drum_speed_as', SetSpeedAction)
-        timeout = rospy.Duration(3)
-        self._move_arm.wait_for_server(timeout)
-        self._move_drum.wait_for_server(timeout)
+def safe_sleep(duration, rate=10):
+	"""
+	Returns true if autonomy changed during the sleep
+	"""
+	autonomy = rospy.get_param("/isAutonomous")
+	polling_delay = 1.0 / rate
+	ros_rate = rospy.Rate(rate)
+	
+	while duration > 0:
+		ros_rate.sleep()
+		duration -= polling_delay
+		
+		if rospy.get_param("/isAutonomous") != autonomy:
+			return True
+	
+	return False
 
-        self._drive_pub = rospy.Publisher('cmd_vel', Twist)
 
-        AbstractActionServer.__init__(self, "Dump", DumpAction)
-    
-    def execute(self, goal):
-        # lift arm
-        goal = SetSpeedGoal()
-        goal.speed = 1.0
-        for _ in range(6):
-            self._move_arm.send_goal(goal)
-            sleep(0.5)
-        goal = SetSpeedGoal()       # Could just edit speed without reinstancing but be safe
-        goal.speed = 0.0
-        self._move_arm.send_goal(goal)
-        
-        # drive forward
-        goal = Twist()
-        goal.linear.x = 1
-        self._drive_pub.publish(goal)
-        sleep(2)
-        goal = Twist()
-        goal.linear.x = 0
-        self._drive_pub.publish(goal)
+def drive_forward_for(duration, speed):
+	goal = SteerAndThrottle()
+	goal.angles = [90, 90, 90, 90]
+	goal.throttles = [speed, speed, speed, speed]
+	DRIVE_PUB.publish(goal)
+	goal = SteerAndThrottle()
+	goal.angles = [90, 90, 90, 90]
+	goal.throttles = [0, 0, 0, 0]
+	if safe_sleep(duration):
+		DRIVE_PUB.publish(goal)
+		return True
+	DRIVE_PUB.publish(goal)
+	return False
 
-        # unload
-        goal = SetSpeedGoal()
-        goal.speed = -1.0
-        self._move_drum.send_goal(goal)
-        sleep(1.5)
-        goal = SetSpeedGoal()
-        goal.speed = 0
-        self._move_drum.send_goal(goal)
-        
-        # drive back
-        goal = Twist()
-        goal.linear.x = -1
-        self._drive_pub.publish(goal)
-        sleep(2)
-        goal = Twist()
-        goal.linear.x = 0
-        self._drive_pub.publish(goal)
 
-        # lower arm
-        goal = SetSpeedGoal()
-        goal.speed = -1.0
-        for _ in range(6):
-            self._move_arm.send_goal(goal)
-            sleep(0.5)
-        goal = SetSpeedGoal()
-        goal.speed = 0.0
-        self._move_arm.send_goal(goal)
+def lower_arm_to_depth(depth):
+	msg = Float32(1)
+	autonomy = rospy.get_param("/isAutonomous")
+	
+	while ARM_DEPTH > depth:
+		ARM_SPEED_PUB.publish(msg)
+		POLLING_RATE.sleep()
+		
+		if autonomy != rospy.get_param("/isAutonomous"):
+			break
+	
+	ARM_SPEED_PUB.publish(Float32(0))
+	return autonomy != rospy.get_param("/isAutonomous")
+
+
+def raise_arm_to_depth(depth):
+	msg = Float32(-1)
+	autonomy = rospy.get_param("/isAutonomous")
+	
+	while ARM_DEPTH < depth:
+		ARM_SPEED_PUB.publish(msg)
+		POLLING_RATE.sleep()
+		
+		if autonomy != rospy.get_param("/isAutonomous"):
+			break
+	
+	ARM_SPEED_PUB.publish(Float32(0))
+	return autonomy != rospy.get_param("/isAutonomous")
+
+
+def spin_drum_for(duration, speed):
+	DRUM_SPEED_PUB.publish(Float32(speed))
+	if safe_sleep(duration):
+		DRUM_SPEED_PUB.publish(Float32(0))
+		return True
+	DRUM_SPEED_PUB.publish(Float32(0))
+	return False
+
+
+class DigServer(AbstractActionServer):
+	def __init__(self):
+		AbstractActionServer.__init__(self, "Dig", DigAction)
+	
+	def execute(self, goal):
+		DEPTH_STEP = 0.1
+		for i in range(1, 4):
+			DRUM_SPEED_PUB.publish(Float32(1))  # spin up drum
+			if lower_arm_to_depth(- i * DEPTH_STEP):  # lower arm to depth
+				DRUM_SPEED_PUB.publish(Float32(0))  # stop drum
+				return
+			if safe_sleep(5.0 * 2 ** (i - 1)):  # hold position
+				DRUM_SPEED_PUB.publish(Float32(0))  # stop drum
+				return
+			DRUM_SPEED_PUB.publish(Float32(0))  # stop drum
+			if raise_arm_to_depth(0.2): return  # lift arm
+			if drive_forward_for(2, 1): return  # drive forward for 2 secs
+			if spin_drum_for(5, -1): return  # unload for 5 secs
+			if drive_forward_for(2, -1): return  # drive back for 2 secs
+		
+		# Dig gravel
+		DRUM_SPEED_PUB.publish(Float32(1))  # spin up drum
+		if lower_arm_to_depth(- 0.4):
+			DRUM_SPEED_PUB.publish(Float32(0))  # stop drum
+			return  # lower arm to depth
+		if raise_arm_to_depth(0.2):
+			DRUM_SPEED_PUB.publish(Float32(0))  # stop drum
+			return  # lift arm
+		DRUM_SPEED_PUB.publish(Float32(0))  # stop drum
