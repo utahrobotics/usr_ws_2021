@@ -86,8 +86,8 @@ class LunabaseStream(object):
 		self.last_twist = Twist()
 		self.rosout_sub = rospy.Subscriber("rosout", Log, self.rosout_callback, queue_size=10)
 		self.is_sending_rosout = True
-		self.arm_angle_sub = rospy.Subscriber('/sensors/angleSensor/angle', Float32, self.arm_angle_callback)
-		self.arm_angle = 0.0
+		self.arm_depth_sub = rospy.Subscriber('/sensors/angleSensor/angle', Float32, self.arm_depth_callback)
+		self.arm_depth = 0.0
 		
 		self._is_streaming_vid = True
 		self.webcam_sub = rospy.Subscriber("/camera/compressed", CompressedImage, self.img_callback, queue_size=10)
@@ -109,7 +109,7 @@ class LunabaseStream(object):
 		self.start_machine_client.wait_for_server(timeout)
 		
 		self.tf_listener = tf.TransformListener()
-		self.odom_timer = Timer(1)
+		self.odom_timer = Timer(0.2)
 		
 		self.joy_input = JoyInput()
 		self.joy_timer = Timer(0.5)
@@ -165,12 +165,11 @@ class LunabaseStream(object):
 		if not self._connected_to_lunabase or not self.is_sending_rosout: return
 		self.tcp_stream.sendall(bytearray([MsgHeaders.ROSOUT, msg.level]) + bytes(msg.msg))
 	
-	def arm_angle_callback(self, msg):
-		self.arm_angle = msg.data
+	def arm_depth_callback(self, msg):
+		self.arm_depth = msg.data
 	
-	def send_odom(self, odom):
-		#self.udp_stream.sendall(bytearray([MsgHeaders.ODOMETRY]) + serialize_odometry(odom))
-		self.udp_stream.sendall(bytearray([MsgHeaders.ARM_ANGLE]) + serialize_f32(self.arm_angle))
+	def send_arm_depth(self):
+		self.udp_stream.sendall(bytearray([MsgHeaders.ARM_ANGLE]) + serialize_f32(self.arm_depth))
 	
 	def poll(self, delta):
 		if self._listening_for_broadcast:
@@ -206,11 +205,7 @@ class LunabaseStream(object):
 			pub_joy(self.joy_publish, self.joy_input)
 		
 		if self.odom_timer.elapse(delta):
-			try:
-				origin, rotation = self.tf_listener.lookupTransform("/map", "/base_link", rospy.Time(0))
-				self.send_odom(self._construct_odom(self.last_twist, origin, rotation))
-			except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
-				pass
+			self.send_arm_depth()
 	
 	def _handle_message(self, msg):
 		if len(msg) == 0:
