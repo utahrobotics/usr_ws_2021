@@ -9,7 +9,7 @@ from std_msgs.msg import Float32, Header, Bool
 from sensor_msgs.msg import Joy, CompressedImage
 from nav_msgs.msg import Odometry
 from motors.msg import HomeMotorManualAction, HomeMotorManualGoal, FakeInitAction, FakeInitGoal
-from motors.srv import FakeInit
+from motors.srv import FakeInit, BrushlessInit
 from autonomy.msg import StartMachineAction, StartMachineGoal, StartMachineFeedback, StartMachineResult
 from actionlib import SimpleActionClient
 from rosgraph_msgs.msg import Log
@@ -303,10 +303,13 @@ class LunabaseStream(object):
 			rospy.set_param("/isAutonomous", True)
 			self.tcp_stream.sendall(bytearray([MsgHeaders.INITIATE_AUTONOMY_MACHINE]))
 			rospy.wait_for_service('fake_init')
+			rospy.wait_for_service('brushless_init')
 			try:
 				rospy.logwarn("trying to fake init!")
 				fake_init = rospy.ServiceProxy('fake_init', FakeInit)
+				brushless_init = rospy.ServiceProxy('brushless_init', BrushlessInit)
 				resp1 = fake_init(True)
+				resp1 = brushless_init(True)
 			except rospy.ServiceException as e:
 				print("Service call failed: %s"%e)
 			# goal = FakeInitGoal()

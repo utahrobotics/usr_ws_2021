@@ -1,8 +1,10 @@
 #!/usr/bin/env python
 import rospy
 import yaml
+import time
 
 from locomotion.msg import SteerAndThrottle
+from motors.msg import BrushlessInit
 
 import Jetson.GPIO as GPIO
 
@@ -42,6 +44,8 @@ class DrivingSubscriber():
 														 enable_pin=motor_config['back_right']['pins']['enable'],
 														 inverted=motor_config['back_right']['inverted'])
 		self.subscription = rospy.Subscriber('locomotion', SteerAndThrottle, self.listener_callback, queue_size=1)
+
+		rospy.Service('brushless_init', BrushlessInit, self.brushlessInit_cb)
 	
 	def listener_callback(self, msg):
 		# first check that the controllers are ready
@@ -64,6 +68,17 @@ class DrivingSubscriber():
 		self.controllers['front_right'].set_speed(msg.throttles[2])
 		self.controllers['back_left'].set_speed(msg.throttles[1])
 		self.controllers['back_right'].set_speed(msg.throttles[3])
+
+	def brushlessInit_cb(self, goal):
+		self.controllers['front_left'].set_speed(1)
+		self.controllers['front_right'].set_speed(1)
+		self.controllers['back_left'].set_speed(-1)
+		self.controllers['back_right'].set_speed(-1)
+		time.sleep(5)
+		self.controllers['front_left'].set_speed(0)
+		self.controllers['front_right'].set_speed(0)
+		self.controllers['back_left'].set_speed(0)
+		self.controllers['back_right'].set_speed(0)
 
 
 class MaxonController():
