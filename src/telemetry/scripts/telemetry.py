@@ -220,6 +220,7 @@ class LunabaseStream(object):
         timeout = rospy.Duration(3)
         self.manual_home_client.wait_for_server(timeout)
         self.dump_client.wait_for_server(timeout)
+        self.fake_init_client.wait_for_server(timeout)
 
         self.last_joy = None
         self._rcvd_joy = False
