@@ -1,16 +1,16 @@
 <launch>
 	<param name="controller_source" value="remote" />
 	<param name="isAutonomous" value="false" />
-	<param name="remote_ip" value="192.168.0.103" />
+	<param name="remote_ip" value="192.168.0.190" />
 	<param name="remote_port" value="42424" />
 	<param name="polling_rate" value="10" />
 
-	<node pkg="telemetry" type="telemetry.py" name="telemetry" output="screen"/>
+	<node pkg="telemetry" type="telemetry.py" name="telemetry"/>
 	<node pkg="autonomy" type="autonomy_actions.py" name="autonomy_actions" />
 
 	<node pkg="locomotion" type="steering.py" name="steering" />
 	<node pkg="motors" type="serial_stepper_control.py" name="steppers" />
-	<node pkg="motors" type="maxon_drive_controller.py" name="brushless" output="screen"/>
+	<node pkg="motors" type="maxon_drive_controller.py" name="brushless"/>
 	
 	<node pkg="locomotion" type="cameras.py" name="cameras" />
 	<node pkg="motors" type="servos.py" name="servos" />
