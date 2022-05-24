@@ -223,6 +223,9 @@ class LunabaseStream(object):
 		
 		header = msg[0]
 		del msg[0]
+
+		rospy.logwarn("header: " + str(header))
+
 		if header == MsgHeaders.PING:
 			rospy.logwarn("Pinged")
 			self.tcp_stream.sendall(bytearray([MsgHeaders.PING]))
